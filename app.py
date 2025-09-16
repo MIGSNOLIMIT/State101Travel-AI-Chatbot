@@ -211,74 +211,95 @@ def apply_theme(theme_name):
         color: {theme['text']};
         transition: background-color 0.3s ease, color 0.3s ease;
     }}
-    
+
     /* Sidebar */
     .css-1d391kg {{
         background-color: {theme['secondary']};
         color: {theme['text']};
         transition: background-color 0.3s ease, color 0.3s ease;
     }}
-    
+
     /* Headers */
     h1, h2, h3, h4, h5, h6 {{
         color: {theme['text']} !important;
         transition: color 0.3s ease;
     }}
-    
-    /* Text */
+
+    /* Main text */
     .stMarkdown, .stText {{
         color: {theme['text']};
         transition: color 0.3s ease;
     }}
 
-    /* Secondary text */
-    .stCaption, .stSubheader, small {{
-        color: {theme['text_secondary']};
-        transition: color 0.3s ease;
-    }}
-    
-    /* Buttons */
+    /* Buttons (accent / solid) */
     .stButton>button {{
         background-color: {theme['button']};
-        color: white;
+        color: white !important;
         border: none;
-        border-radius: 4px;
+        border-radius: 6px;
         padding: 0.5rem 1rem;
-        transition: background-color 0.3s ease;
+        font-weight: 600;
+        transition: all 0.25s ease;
     }}
     .stButton>button:hover {{
         filter: brightness(1.05);
         box-shadow: 0 0 10px {theme['accent']};
     }}
-    
+
+    /* Outlined / minimal buttons (keeps existing UI consistent) */
+    .stDownloadButton>button {{
+        background: transparent;
+        border: 2px solid {theme['text']};
+        color: {theme['text']} !important;
+        border-radius: 6px;
+        font-weight: 600;
+    }}
+    .stDownloadButton>button:hover {{
+        background-color: {theme['text']};
+        color: {theme['primary']} !important;
+    }}
+
     /* Input fields */
     .stTextInput>div>div>input, .stTextArea>div>div>textarea {{
         background-color: {theme['secondary']};
         color: {theme['text']};
-        transition: background-color 0.3s ease, color 0.3s ease;
+        transition: background-color 0.25s ease, color 0.25s ease;
     }}
 
-        /* Radio buttons container */
-        .stRadio > div {{
-            background-color: {theme['secondary']};
-            padding: 10px;
-            border-radius: 4px;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }}
+    /* Radio container */
+    .stRadio>div {{
+        background-color: {theme['secondary']};
+        padding: 10px;
+        border-radius: 6px;
+        transition: background-color 0.25s ease;
+    }}
 
-        /* Radio label text fix */
-        .stRadio label {{
-            font-weight: 600;
-            color: {"black" if theme_name == "light" else "white"} !important;
-        }}
-    
+    /* --- RADIO LABELS: FORCE ELECTRIC BLUE (#00BFFF) FOR BOTH THEMES --- */
+    /* cover multiple possible DOM structures Streamlit may render */
+    div[data-baseweb="radio"] label,
+    div[data-baseweb="radio"] label p,
+    div[data-baseweb="radio"] label span,
+    .stRadio label,
+    .stRadio label p,
+    .stRadio label span {{
+        color: #00BFFF !important;
+        font-weight: 700;
+    }}
+
+    /* ensure checked radio remains blue */
+    div[data-baseweb="radio"] [aria-checked="true"] label,
+    div[data-baseweb="radio"] [aria-checked="true"] label p,
+    div[data-baseweb="radio"] [aria-checked="true"] label span {{
+        color: #00BFFF !important;
+        font-weight: 700;
+    }}
+
     /* Select boxes */
     .stSelectbox>div>div {{
         background-color: {theme['secondary']};
         color: {theme['text']};
-        transition: background-color 0.3s ease, color 0.3s ease;
     }}
-    
+
     /* Chat messages */
     .stChatMessage {{
         background-color: {theme['secondary']};
@@ -286,64 +307,41 @@ def apply_theme(theme_name):
         border-radius: 0.5rem;
         margin: 0.5rem 0;
         color: {theme['text']};
-        transition: background-color 0.3s ease, color 0.3s ease;
     }}
-    
+
     /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 8px;
-    }}
-    
     .stTabs [data-baseweb="tab"] {{
         background-color: {theme['secondary']};
         color: {theme['text']};
-        border-radius: 4px 4px 0px 0px;
+        border-radius: 4px 4px 0 0;
         padding: 10px 16px;
-        transition: background-color 0.3s ease, color 0.3s ease;
     }}
-    
     .stTabs [aria-selected="true"] {{
         background-color: {theme['accent']};
-        color: white;
-        transition: background-color 0.3s ease;
+        color: #FFFFFF !important;
     }}
-    
-    /* Select box for theme */
-    .stSelectbox>div>div>div {{
-        color: {theme['text']};
-        transition: color 0.3s ease;
-    }}
-    
-    /* Select box dropdown */
-    div[data-baseweb="select"] div {{
-        color: {theme['text']} !important;
-        transition: color 0.3s ease;
-    }}
-    
+
     /* Form labels */
     .stForm label {{
         color: {theme['text']} !important;
-        transition: color 0.3s ease;
     }}
-    
-    /* Success and error messages */
+
+    /* Success / error boxes */
     .stSuccess, .stError {{
         color: #FFFFFF !important;
-        transition: color 0.3s ease;
         font-weight: 600;
         border-radius: 6px;
         padding: 0.5rem 0.75rem;
     }}
     .stSuccess {{ background-color: #28a745 !important; }}
     .stError   {{ background-color: #dc3545 !important; }}
-    
+
     /* Divider */
     .stDivider {{
         border-color: {theme['text']} !important;
         opacity: 0.3;
-        transition: border-color 0.3s ease;
     }}
-    
+
     /* Theme toggle button */
     .theme-toggle {{
         position: fixed;
@@ -364,25 +362,14 @@ def apply_theme(theme_name):
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         transition: all 0.3s ease;
     }}
-    
     .theme-toggle:hover {{
-        transform: scale(1.1);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }}
-    
-    /* Animation for theme toggle */
-    @keyframes rotate {{
-        from {{ transform: rotate(0deg); }}
-        to {{ transform: rotate(360deg); }}
-    }}
-    
-    .theme-toggle.rotating {{
-        animation: rotate 0.5s ease;
+        transform: scale(1.06);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.18);
     }}
     </style>
     """
-    
     st.markdown(css, unsafe_allow_html=True)
+
 
 # ========== MAIN APP ==========
 def main():
@@ -512,6 +499,7 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
 
