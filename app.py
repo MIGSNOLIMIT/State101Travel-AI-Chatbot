@@ -333,8 +333,8 @@ def apply_theme(theme_name):
         border-radius: 6px;
         padding: 0.5rem 0.75rem;
     }}
-    .stSuccess {{ background-color: #28a745 !important; }}
-    .stError   {{ background-color: #dc3545 !important; }}
+    .stSuccess {{ background-color: #000000 !important; }}
+    .stError   {{ background-color: #000000 !important; }}
 
     /* Divider */
     .stDivider {{
@@ -499,6 +499,7 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
 
