@@ -264,7 +264,7 @@ def apply_theme(theme_name):
         padding: 10px;
         border-radius: 4px;
         transition: background-color 0.3s ease, color 0.3s ease;
-    }
+    
 
     /* Radio label text */
     .stRadio label {
@@ -513,4 +513,5 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
