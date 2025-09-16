@@ -324,18 +324,28 @@ def apply_theme(theme_name):
     /* Form labels */
     .stForm label {{
         color: {theme['text']} !important;
-    }}
+   }}
 
-    /* Success / error boxes */
-    .stSuccess, .stError {{
-        color: #FFFFFF !important;
-        font-weight: 600;
-        border-radius: 6px;
-        padding: 0.5rem 0.75rem;
-    }}
-    .stSuccess {{ background-color: #000000 !important; }}
-    .stError   {{ background-color: #000000 !important; }}
+                /* Success / error boxes - robust override for Streamlit alerts */
+        .stSuccess, .stError,
+        div[role="status"], div[role="alert"],
+        div[data-testid="stStatusWidget"], div[data-testid="stAlert"],
+        div[class*="stAlert"] {{
+            background-color: #000000 !important;
+            color: #FFFFFF !important;
+            font-weight: 600 !important;
+            border-radius: 6px !important;
+            padding: 0.5rem 0.75rem !important;
+            box-shadow: none !important;
+        }}
 
+        /* ensure text inside the alerts is white */
+        div[role="status"] p, div[role="alert"] p,
+        div[data-testid="stStatusWidget"] p, div[data-testid="stAlert"] p,
+        .stSuccess p, .stError p {{
+            color: #FFFFFF !important;
+            margin: 0;
+        }}
     /* Divider */
     .stDivider {{
         border-color: {theme['text']} !important;
@@ -499,6 +509,7 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
 
