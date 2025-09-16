@@ -257,21 +257,20 @@ def apply_theme(theme_name):
         color: {theme['text']};
         transition: background-color 0.3s ease, color 0.3s ease;
     }}
-    
+
         /* Radio buttons container */
-    .stRadio > div {
-        background-color: {theme['secondary']};
-        padding: 10px;
-        border-radius: 4px;
-        transition: background-color 0.3s ease, color 0.3s ease;
-    
+        .stRadio > div {{
+            background-color: {theme['secondary']};
+            padding: 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }}
 
-    /* Radio label text */
-    .stRadio label {
-        font-weight: 600;
-        color: {"black" if theme_name == "light" else "white"} !important;
-
-    }}
+        /* Radio label text fix */
+        .stRadio label {{
+            font-weight: 600;
+            color: {"black" if theme_name == "light" else "white"} !important;
+        }}
     
     /* Select boxes */
     .stSelectbox>div>div {{
@@ -513,5 +512,6 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
