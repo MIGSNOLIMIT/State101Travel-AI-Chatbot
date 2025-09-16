@@ -6,3 +6,4 @@ google-auth==2.40.1
 tenacity==8.5.0
 langdetect==1.0.9
 ratelimit==2.2.1
+deep-translator==1.11.4
