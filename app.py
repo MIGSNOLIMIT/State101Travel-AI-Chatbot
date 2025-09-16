@@ -47,7 +47,7 @@ SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for S
 
 # ========== HARDCODED RESPONSES ==========
 HARDCODED_RESPONSES = {
-    "requirements": """🛂 **Visa Requirements**:\n- Valid passport (with atleast 6 months validity beyond your intended stay in the U.S.)\n- 2x2 photo (white background)\n- Resume\n- NBI Clearance\n- Birth Certificate\n- Marriage Cert (if applicable)\n- Employment Certificate""",
+    "requirements": """🛂 **Visa Requirements**:\n- Valid passport (with atleast 6 months validity beyond your intended stay in the U.S.)\n- 2x2 photo (white background)\n- Resume\n- NBI Clearance\n- Birth Certificate""",
     "appointment": "⏰ Strictly by appointment only. Please submit the application form first.",
     "location": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City",
     "hours": "🕘 Open Mon-Sat 9AM-5PM",
@@ -489,4 +489,5 @@ these terms.
         show_requirements()
 
 if __name__ == "__main__":
+
     main()
