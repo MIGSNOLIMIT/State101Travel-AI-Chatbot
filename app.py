@@ -47,7 +47,7 @@ SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for S
 
 # ========== HARDCODED RESPONSES ==========
 HARDCODED_RESPONSES = {
-    "requirements": """🛂 **Visa Requirements**:\n- Valid passport (with atleast 6 months validity beyond your intended stay in the U.S.)\n- 2x2 photo (white background)\n- Training Certificate(if available)\n- Diploma(if available)\n- Resume""",
+"requirements": """🛂 **Visa Requirements**:\n- Valid passport (with atleast 6 months validity beyond your intended stay in the U.S.)\n- 2x2 photo (white background)\n- Training Certificate(if available)\n- Diploma(if available)\n- Resume""",
     "appointment": "⏰ Strictly by appointment only. Please submit the application form first.",
     "location": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City",
     "hours": "🕘 Open Mon-Sat 9AM-5PM",
@@ -57,8 +57,14 @@ HARDCODED_RESPONSES = {
     "complex": "🔍 For case-specific advice, please contact our specialists directly:\n📞 0961 084 2538\n📧 state101ortigasbranch@gmail.com",
     "status": "🔄 For application status updates, please email us with your reference number.",
     "urgent": "⏰ For urgent concerns, call us at +63 905-804-4426 or +63 969-251-0672 during business hours.",
-    "how much": "Please proceed to Application Form for Initial Assesment and expect a phone Call within 24 hrs",
-    "legit": "Proof of legitimacy are posted on our Website",
+    "how much": "💰 For pricing information, please proceed to the Application Form for Initial Assessment and expect a phone call within 24 hours.\n\n📞 You may also contact us directly:\n+63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
+    "price": "💰 For pricing information, please proceed to the Application Form for Initial Assessment and expect a phone call within 24 hours.\n\n📞 You may also contact us directly:\n+63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
+    "cost": "💰 For pricing information, please proceed to the Application Form for Initial Assessment and expect a phone call within 24 hours.\n\n📞 You may also contact us directly:\n+63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
+    "fee": "💰 For pricing information, please proceed to the Application Form for Initial Assessment and expect a phone call within 24 hours.\n\n📞 You may also contact us directly:\n+63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
+    "payment": "💳 For payment options and pricing details, please contact us directly:\n\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM\n\n✅ Services are by appointment only. Please complete the Application Form for initial assessment.",
+    "payment options": "💳 For payment options and pricing details, please contact us directly:\n\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM\n\n✅ Services are by appointment only. Please complete the Application Form for initial assessment.",
+    "pay": "💳 For payment options and pricing details, please contact us directly:\n\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM\n\n✅ Services are by appointment only. Please complete the Application Form for initial assessment.",
+    "legit": "✅ Proof of legitimacy are posted on our Website.",
     
 }
 
@@ -85,23 +91,79 @@ COLOR_THEMES = {
 }
 
 # ========== LLM WRAPPER ==========
+# ========== LLM WRAPPER WITH RELEVANCE CHECK ==========
 class VisaAssistant:
     def __init__(self):
         self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         self.daily_count = 0
         self.last_call = 0
+        
+        # Define topics that are considered relevant to State101 Travel
+        self.relevant_keywords = [
+            "visa", "travel", "passport", "appointment", "requirements", 
+            "canada", "canadian", "america", "american", "us", "usa",
+            "application", "processing", "state101", "state 101",
+            "consultation", "documentation", "embassy", "interview",
+            "tourist", "business", "student", "work permit", "immigration",
+            "fee", "cost", "price", "hours", "location", "contact",
+            "eligibility", "qualification", "denial", "approval",
+            "urgent", "status", "track", "form", "apply", "b1", "b2"
+        ]
+        
+        # Define off-topic keywords that should trigger immediate rejection
+        self.offtopic_keywords = [
+            "calculator", "code", "program", "recipe", "cook", "game",
+            "movie", "song", "weather", "sports", "stock", "crypto",
+            "math", "solve", "equation", "homework", "essay", "write a story"
+        ]
+
+    def is_relevant_query(self, prompt):
+        """Check if the query is related to State101 Travel services"""
+        normalized_prompt = prompt.lower()
+        
+        # First check for obvious off-topic requests
+        for keyword in self.offtopic_keywords:
+            if keyword in normalized_prompt:
+                return False
+        
+        # Check for greetings (always allow)
+        greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"]
+        if any(greeting in normalized_prompt for greeting in greetings) and len(normalized_prompt.split()) <= 3:
+            return True
+        
+        # Check if query contains relevant keywords
+        has_relevant_keyword = any(keyword in normalized_prompt for keyword in self.relevant_keywords)
+        
+        # If no relevant keywords found and prompt is substantial (>5 words), likely off-topic
+        if not has_relevant_keyword and len(normalized_prompt.split()) > 5:
+            return False
+            
+        return True
 
     @sleep_and_retry
     @limits(calls=10, period=60)
     def generate(self, prompt):
         try:
             # Detect and translate if not English
-            if len(prompt.split()) > 2:  # Only detect for longer texts
+            if len(prompt.split()) > 2:
                 lang = detect(prompt)
                 if lang != "en":
                     prompt = GoogleTranslator(source=lang, target="en").translate(prompt)
         except:
             pass
+
+        # Check if query is relevant to State101 Travel
+        if not self.is_relevant_query(prompt):
+            return """😊 I'm sorry, but I can only assist with queries related to **State101 Travel** and our visa services for the US and Canada.
+
+I can help you with:
+✈️ Visa application processes and requirements
+📋 Documentation needed for Canadian/American visas
+📞 Booking appointments and consultations
+📍 Our office location and business hours
+💼 B1/B2 visa information and opportunities
+
+**How can I assist you with your visa needs today?**"""
 
         # Check for form request
         if "form" in prompt.lower() or "apply" in prompt.lower():
@@ -120,10 +182,19 @@ class VisaAssistant:
             time.sleep(1.5 - (now - self.last_call))
 
         try:
+            # Enhanced system prompt with strict boundaries
+            enhanced_system_prompt = SYSTEM_PROMPT + """
+
+**CRITICAL RESTRICTION**: You MUST ONLY answer questions related to State101 Travel and visa services. If asked about anything unrelated (coding, recipes, general knowledge, etc.), respond with:
+
+"I apologize, but I can only assist with State101 Travel visa services. Please ask me about US/Canada visa requirements, applications, or our services."
+
+Never provide code, calculations, or information outside of visa/travel services."""
+
             response = self.client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": enhanced_system_prompt},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
@@ -131,10 +202,18 @@ class VisaAssistant:
             )
             self.last_call = time.time()
             self.daily_count += 1
-            return response.choices[0].message.content
-        except Exception as e:
-            return "⚠️ System busy. Please contact us directly:\n📞 0961 084 2538\n📧 state101ortigasbranch@gmail.com"
+            
+            # Double-check the response doesn't contain code or off-topic content
+            response_text = response.choices[0].message.content
+            if any(indicator in response_text.lower() for indicator in ["```", "def ", "function", "import ", "class "]):
+                return """😊 I'm sorry, but I can only assist with queries related to **State101 Travel** and our visa services.
 
+**How can I help you with your visa application today?**"""
+            
+            return response_text
+            
+        except Exception as e:
+            return "⚠️ System busy. Please contact us directly:\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com"
 # ========== GOOGLE SHEETS INTEGRATION ==========
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
 def save_to_sheet(data):
@@ -478,27 +557,29 @@ these terms.
     tab1, tab2, tab3 = st.tabs(["Chat Assistant", "Application Form", "Requirements"])
 
     with tab1:
-        # Display chat messages without a scrollable container
-        for msg in st.session_state.messages:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+        # Create a container for chat messages
+        chat_container = st.container()
+        
+        # Display chat messages
+        with chat_container:
+            for msg in st.session_state.messages:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
+        
+        # Add empty space to push content up
+        st.markdown("<br>" * 2, unsafe_allow_html=True)
 
-        # Input box at the bottom (always visible)
+        # Input box at the bottom (only in tab1)
         user_prompt = st.chat_input("Ask about US and Canada visas...")
         if user_prompt:
             # Show user's message
             st.session_state.messages.append({"role": "user", "content": user_prompt})
-            with st.chat_message("user"):
-                st.markdown(user_prompt)
-
+            
             # Get assistant response
-            with st.chat_message("assistant"):
-                with st.spinner("Researching..."):
-                    bot_response = st.session_state.chatbot.generate(user_prompt)
-                    st.markdown(bot_response)
-                    st.session_state.messages.append({"role": "assistant", "content": bot_response})
+            bot_response = st.session_state.chatbot.generate(user_prompt)
+            st.session_state.messages.append({"role": "assistant", "content": bot_response})
             
-            
+            # Rerun to refresh and show new messages
             st.rerun()
 
     with tab2:
