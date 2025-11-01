@@ -484,49 +484,37 @@ def main():
         Before using our services, please read and agree to the following:
 
        State101 Chatbot Terms and Conditions
-
 By using the State101 Chatbot, you agree to the following terms and conditions.
 1. General Disclaimer
-
 The chatbot is for information and initial consultation only. The information it provides is not legal
 advice and should not replace a formal consultation with a qualified professional. To get
 personalized guidance and move forward with any application, you must book an official
 appointment with our team.
 2. Personal Data
-
 Any personal data you provide, including through the Application Form, is handled securely. It will be
 used solely to help with your visa assistance and consultation. We use strict validation rules to ensure
 all information is complete and correctly formatted.
 3. Chatbot Functionality
 The chatbot is designed to provide a seamless experience with several key functions:
-
 • Conversational Assistant: You can ask questions about Canadian and American visas, and your chat
 history is saved for you to review.
-
 • Application Form: A dedicated tab for submitting your personal and contact details for visa
 assistance.
-
 • Visa Requirements: The chatbot provides a clear checklist of necessary documents for Canadian
 and American visa applications in a separate tab.
-
 • Language Support: It can detect and translate non-English messages to improve communication
 accuracy.
-
 • AI-Powered Responses: While many common questions have pre-set answers for consistency, the
 chatbot can also use AI to give more detailed responses to complex queries.
-
 • Fallback Logic: In case of technical issues, the chatbot will provide a friendly notification and our
 contact information. It also uses rate limiting to prevent excessive requests and maintain service
 stability.
-
 • Session Management: The chatbot remembers your interactions and agreements within a single
 session, so you won't lose your chat history or have to re-agree to the terms if you refresh the page.
-
 4. Limitation of Liability
 State101 Travel is not liable for any direct or indirect damages resulting from the use of the chatbot.
 This includes but isn't limited to visa application rejections, delays, or any loss of income or travel
 plans.
-
 5. Changes to Terms
 We reserve the right to update these terms at any time. Any significant changes will be
 communicated to our clients. By continuing to use the chatbot, you agree to the latest version of
@@ -534,32 +522,20 @@ these terms.
 
         """)
 
-        # Custom CSS for the checkbox - making the text blue and background highlighted
+        # Custom CSS for the checkbox - ONLY make the text blue, no background
         st.markdown("""
         <style>
+        /* Make ONLY the checkbox text blue so it's visible in both themes */
         .stCheckbox > label {
-            background-color: #000080;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            font-weight: bold;
-            border: 2px solid #000080;
-        }
-        .stCheckbox > label:hover {
-            background-color: #0000CD;
-            border: 2px solid #0000CD;
-        }
-        
-        /* Make the checkbox text blue so it's visible in both themes */
-        .stCheckbox > label > div:first-child {
             color: #0000FF !important;
             font-weight: bold;
         }
         
-        /* Alternative approach to target the text */
-        div[data-testid="stCheckbox"] label p {
-            color: #0000FF !important;
-            font-weight: bold;
+        /* Remove any background styling */
+        .stCheckbox > label {
+            background-color: transparent !important;
+            padding: 0px !important;
+            border: none !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -632,6 +608,7 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
 
