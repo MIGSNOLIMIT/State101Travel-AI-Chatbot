@@ -522,20 +522,13 @@ these terms.
 
         """)
 
-        # Custom CSS for the checkbox - ONLY make the text blue, no background
+        
         st.markdown("""
         <style>
-        /* Make ONLY the checkbox text blue so it's visible in both themes */
-        .stCheckbox > label {
-            color: #0000FF !important;
-            font-weight: bold;
-        }
-        
-        /* Remove any background styling */
-        .stCheckbox > label {
-            background-color: transparent !important;
-            padding: 0px !important;
-            border: none !important;
+        div[data-testid="stCheckbox"] label p {
+            color: #0066ff !important;  /* Blue text */
+            font-weight: bold !important;
+            font-size: 1rem !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -546,8 +539,9 @@ these terms.
         else:
             st.stop()
 
-    # Apply selected theme
+    # Apply selected theme after agreement
     apply_theme(st.session_state.theme)
+
     
     # Theme toggle button - SIMPLE VERSION THAT WILL WORK
     current_theme = st.session_state.theme
@@ -608,6 +602,7 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
 
