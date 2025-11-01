@@ -522,6 +522,24 @@ these terms.
 
         """)
 
+        # Custom CSS for the checkbox
+        st.markdown("""
+        <style>
+        .stCheckbox > label {
+            background-color: #000080;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            border: 2px solid #000080;
+        }
+        .stCheckbox > label:hover {
+            background-color: #0000CD;
+            border: 2px solid #0000CD;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         if st.checkbox("I agree to the Terms and Conditions"):
             st.session_state.agreed = True
             st.rerun()
@@ -590,6 +608,7 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
 
