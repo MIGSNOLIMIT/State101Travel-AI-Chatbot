@@ -222,7 +222,7 @@ def save_to_sheet(data):
             st.secrets["GCP_SERVICE_ACCOUNT"],
             scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         )
-        sheet = gspread.authorize(creds).open("State101Applications").sheet1
+        sheet = gspread.authorize(creds).open("state101application").sheet1
         sheet.append_row(data)
         return True
     except Exception:
@@ -602,6 +602,7 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
 
