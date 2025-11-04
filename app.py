@@ -43,6 +43,8 @@ SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for S
 
 7. **Error Handling**:
    - If unsure: "I specialize in visa assistance. For this question, please contact our specialists during business hours."
+8. **Being Very Informative always use the hardcoded response for information basis to especially the location and other informations like numbers and also for location send this 
+google map link: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
 """
 
 # ========== HARDCODED RESPONSES ==========
@@ -50,6 +52,7 @@ HARDCODED_RESPONSES = {
 "requirements": """🛂 **Visa Requirements**:\n- Valid passport (with atleast 6 months validity beyond your intended stay in the U.S.)\n- 2x2 photo (white background)\n- Training Certificate(if available)\n- Diploma(if available)\n- Resume""",
     "appointment": "⏰ Strictly by appointment only. Please submit the application form first.",
     "location": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City",
+    ‎"located": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City",
     "hours": "🕘 Open Mon-Sat 9AM-5PM",
     "opportunities": "💼 B1 Visa Includes 6-month care-giving training program with our Partner homecare facilities in US.",
     "business hours": "🕘 We're open Monday to Saturday, 9:00 AM to 5:00 PM.",
@@ -602,6 +605,7 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
 
