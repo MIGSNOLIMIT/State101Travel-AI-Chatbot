@@ -43,8 +43,8 @@ SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for S
 
 7. **Error Handling**:
    - If unsure: "I specialize in visa assistance. For this question, please contact our specialists during business hours."
-8. **Being Very Informative always use the hardcoded response for information basis to especially the location and other informations like numbers and also for location send this 
-google map link: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+8. **Be Very Informative always use the hardcoded response for information basis to especially the location and other informations like numbers and also for location send this 
+google map link: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8 ."
 """
 
 # ========== HARDCODED RESPONSES ==========
@@ -605,6 +605,7 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
 
 
 
