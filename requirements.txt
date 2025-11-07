@@ -7,3 +7,4 @@ tenacity==8.5.0
 langdetect==1.0.9
 ratelimit==2.2.1
 deep-translator==1.11.4
+google-api-python-client==2.151.0

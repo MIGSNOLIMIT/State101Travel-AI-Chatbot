@@ -9,6 +9,14 @@ from ratelimit import limits, sleep_and_retry
 from pathlib import Path
 from langdetect import detect
 from deep_translator import GoogleTranslator
+import smtplib
+from email.message import EmailMessage
+import mimetypes
+import ssl
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+import io
+from datetime import datetime
 
 # ========== SYSTEM PROMPT ==========
 SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for State101Travel specializing in US/Canada visa assistance. Your role is to:
@@ -31,7 +39,7 @@ SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for S
       ⏰ Mon-Sat 9AM-5PM"
 
 4. **Key Talking Points**:
-   - Always emphasize: "Services are by appointment only"
+   - Always emphasize: "We recommend an appointment before walking in."
 
 5. **Style Guide**:
    - Use bullet points for requirements
@@ -45,16 +53,26 @@ SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for S
    - If unsure: "I specialize in visa assistance. For this question, please contact our specialists during business hours."
 8. **Be Very Informative always use the hardcoded response for information basis to especially the location and other informations like numbers and also for location send this 
 google map link: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8 ."
+ 
+9. Strict Answer Policy (additive, do not override earlier rules):
+    - Always use HARDCODED_RESPONSES first for factual queries (location/address/map, contact/phones/email, hours, services, legitimacy, program details, qualifications, age, gender, graduates, requirements, appointment, status, price).
+    - For questions that are "fees related" or "process related", reply exactly: "All the details about our program will be discussed during the initial briefing and assessment at our office".
+    - When providing the office location, include BOTH the Google Maps link and the TikTok location guide link from the hardcoded responses.
+    - Never invent or rename branches/locations. Use exactly the strings in the hardcoded responses.
+    - If requested information is not present in HARDCODED_RESPONSES, reply that the information isn't available and direct the user to contact via the official phones/email or submit the Application Form.
 """
 
 # ========== HARDCODED RESPONSES ==========
 HARDCODED_RESPONSES = {
-"requirements": """🛂 **Visa Requirements**:\n- Valid passport (with atleast 6 months validity beyond your intended stay in the U.S.)\n- 2x2 photo (white background)\n- Training Certificate(if available)\n- Diploma(if available)\n- Resume""",
+"requirements": """🛂 **Visa Requirements**:\n- Valid passport (Photocopy)\n- 2x2 photo (white background)\n- Training Certificate(if available)\n- Diploma(Photocopy if available)\n- Updated Resume""",
     "appointment": "⏰ Strictly by appointment only. Please submit the application form first.",
-    "located": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City",
+    
     "hours": "🕘 Open Mon-Sat 9AM-5PM",
     "opportunities": "💼 B1 Visa Includes 6-month care-giving training program with our Partner homecare facilities in US.",
     "business hours": "🕘 We're open Monday to Saturday, 9:00 AM to 5:00 PM.",
+    "located": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
+    "map": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
+    "location": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
     "processing time": "⏳ Standard processing takes 2-4 weeks. Expedited services may be available.",
     "complex": "🔍 For case-specific advice, please contact our specialists directly:\n📞 0961 084 2538\n📧 state101ortigasbranch@gmail.com",
     "status": "🔄 For application status updates, please email us with your reference number.",
@@ -66,7 +84,45 @@ HARDCODED_RESPONSES = {
     "payment": "💳 For payment options and pricing details, please contact us directly:\n\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM\n\n✅ Services are by appointment only. Please complete the Application Form for initial assessment.",
     "payment options": "💳 For payment options and pricing details, please contact us directly:\n\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM\n\n✅ Services are by appointment only. Please complete the Application Form for initial assessment.",
     "pay": "💳 For payment options and pricing details, please contact us directly:\n\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM\n\n✅ Services are by appointment only. Please complete the Application Form for initial assessment.",
-    "legit": "✅ Proof of legitimacy are posted on our Website.",
+    "legit": "✅ Yes, our company is 100% legitimate. We’re officially registered and have a permit to operate issued by the Municipality of Pasig.",
+    
+    # === FAQs added per request ===
+    # Services
+    "services": "🛂 We provide full assistance with US visa applications and processing.",
+    "what services do you offer": "🛂 We provide full assistance with US visa applications and processing.",
+    
+    # Other countries
+    "other countries": "🌍 We currently don’t offer visa assistance for other countries. Our services are focused on US visa processing.",
+    "do you also offer visas to other countries": "🌍 We currently don’t offer visa assistance for other countries. Our services are focused on US visa processing.",
+    
+    # Legitimacy (extra trigger)
+    "is your company legit": "✅ Yes, our company is 100% legitimate. We’re officially registered and have a permit to operate issued by the Municipality of Pasig.",
+    
+    # Program details
+    "program details": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "details of your program": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    
+    # Visa type offered
+    "visa type": "🛂 We offer the B1 Non-Immigrant Visa.",
+    "what type of visa you offer": "🛂 We offer the B1 Non-Immigrant Visa.",
+    
+    # Qualifications
+    "qualifications": "✅ Open to applicants with or without prior training or experience. Applicants must be willing to undergo training and develop the necessary skills for the program.",
+    
+    # Age
+    "age limit": "👥 There is no strict age limit, provided the applicant is physically capable of performing the required tasks.",
+    
+    # Gender
+    "is there genders required": "⚧ Open to all genders.",
+    "gender": "⚧ Open to all genders.",
+    
+    # Graduates
+    "does it accept graduates only": "🎓 Accepts both graduates and undergraduates.",
+    "graduates": "🎓 Accepts both graduates and undergraduates.",
+    
+    # Fees / Process related
+    "fees related": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "process related": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
     
 }
 
@@ -99,6 +155,10 @@ class VisaAssistant:
         self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         self.daily_count = 0
         self.last_call = 0
+        # Strict mode ensures canonical info comes only from hardcoded data
+        self.strict_mode = bool(st.secrets.get("STRICT_MODE", True))
+        # Facts-backed fallback mode: when true, LLM receives canonical facts and must answer using them only
+        self.smart_facts_mode = bool(st.secrets.get("SMART_FACTS_MODE", True))
         
         # Define topics that are considered relevant to State101 Travel
         self.relevant_keywords = [
@@ -109,7 +169,7 @@ class VisaAssistant:
             "tourist", "business", "student", "work permit", "immigration",
             "fee", "cost", "price", "hours", "location", "contact",
             "eligibility", "qualification", "denial", "approval",
-            "urgent", "status", "track", "form", "apply", "b1", "b2"
+            "urgent", "status", "track", "form", "apply", "b1"
         ]
         
         # Define off-topic keywords that should trigger immediate rejection
@@ -118,6 +178,152 @@ class VisaAssistant:
             "movie", "song", "weather", "sports", "stock", "crypto",
             "math", "solve", "equation", "homework", "essay", "write a story"
         ]
+
+        # Intent synonyms mapped to canonical intents
+        self.intent_synonyms = {
+            "location": [
+                "where are you", "where are you located", "where is your office",
+                "office address", "address", "location", "map", "directions",
+                "find you", "tiktok", "tiktok location", "tiktok video", "google map"
+            ],
+            "hours": ["hours", "opening hours", "business hours", "schedule", "open time", "what time"],
+            "contact": ["contact", "phone", "phone number", "call you", "email", "email address"],
+            "services": ["services", "what services", "services do you offer"],
+            "legit": ["legit", "legitimacy", "is your company legit"],
+            "program details": ["program details", "details of your program", "details of program"],
+            "visa type": ["visa type", "what type of visa", "what type of visa you offer"],
+            "qualifications": ["qualifications", "qualification"],
+            "age limit": ["age", "age limit"],
+            "gender": ["gender", "genders required"],
+            "graduates": ["graduates", "undergraduate", "does it accept graduates only"],
+            "requirements": ["requirements", "documents", "needed documents"],
+            "appointment": ["appointment", "book", "schedule appointment"],
+            "status": ["status", "application status"],
+            "price": ["price", "cost", "fee", "how much", "payment", "payment options", "pay"],
+            "program details": [
+                "program details", "details of your program", "details of program",
+                "fees related", "process related",
+                "visa application process", "application process", "process",
+                "how does visa application process work", "how does the process work",
+                "how does your process work", "steps", "procedure", "flow", "timeline", "how to apply"
+            ],
+        }
+
+    def _normalize(self, text: str) -> str:
+        return re.sub(r'[^\w\s]', '', text.lower()).strip()
+
+    def match_intent(self, prompt: str) -> str | None:
+        norm = self._normalize(prompt)
+        for key, synonyms in self.intent_synonyms.items():
+            for s in synonyms:
+                if s in norm:
+                    return key
+        return None
+
+    def get_canonical_response(self, intent: str) -> str | None:
+        # Direct retrieval if a matching key exists
+        if intent in HARDCODED_RESPONSES:
+            return HARDCODED_RESPONSES[intent]
+        # Map some intents to underlying keys
+        mapping = {
+            "location": "location",
+            "hours": "hours",
+            "contact": "urgent",  # contains official phone numbers and email
+            "services": "services",
+            "legit": "legit",
+            "program details": "program details",
+            "visa type": "visa type",
+            "qualifications": "qualifications",
+            "age limit": "age limit",
+            "gender": "gender",
+            "graduates": "graduates",
+            "requirements": "requirements",
+            "appointment": "appointment",
+            "status": "status",
+            "price": "price",
+        }
+        key = mapping.get(intent)
+        if key and key in HARDCODED_RESPONSES:
+            return HARDCODED_RESPONSES[key]
+        return None
+
+    def pack_facts(self) -> dict:
+        """Build a compact facts dictionary from hardcoded responses.
+        These are the only allowed canonical values the LLM may use in fallback."""
+        def first_url(text: str) -> str | None:
+            m = re.search(r"https?://\S+", text or "")
+            return m.group(0) if m else None
+
+        # Address line (no links)
+        address_line = HARDCODED_RESPONSES.get("located") or ""
+        # Location block contains address + links
+        location_block = HARDCODED_RESPONSES.get("location") or address_line
+        map_url = first_url(HARDCODED_RESPONSES.get("map", "")) or first_url(location_block) or ""
+        # Extract TikTok link if present
+        tiktok_url = None
+        for url_match in re.findall(r"https?://\S+", location_block):
+            if "tiktok.com" in url_match:
+                tiktok_url = url_match
+                break
+
+        # Extract phones and email from 'urgent' block (contains official numbers and email)
+        urgent = HARDCODED_RESPONSES.get("urgent", "")
+        phones = re.findall(r"\+?\d[\d\s-]{7,}\d", urgent)
+        email_match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", urgent)
+        email_addr = email_match.group(0) if email_match else ""
+
+        facts = {
+            "address": address_line,
+            "location_block": location_block,
+            "map_url": map_url,
+            "tiktok_url": tiktok_url or "",
+            "hours": HARDCODED_RESPONSES.get("hours", ""),
+            "phones": phones,
+            "email": email_addr,
+            "services": HARDCODED_RESPONSES.get("services", ""),
+            "legitimacy": HARDCODED_RESPONSES.get("legit", ""),
+            "program_details": HARDCODED_RESPONSES.get("program details", ""),
+            "qualifications": HARDCODED_RESPONSES.get("qualifications", ""),
+            "age_policy": HARDCODED_RESPONSES.get("age limit", ""),
+            "gender_policy": HARDCODED_RESPONSES.get("gender", ""),
+            "graduates_policy": HARDCODED_RESPONSES.get("graduates", ""),
+            "price_note": HARDCODED_RESPONSES.get("price", HARDCODED_RESPONSES.get("how much", "")),
+            "requirements": HARDCODED_RESPONSES.get("requirements", ""),
+            "contact_block": HARDCODED_RESPONSES.get("urgent", ""),
+            "form_hint": "📝 Please visit the 'Application Form' tab to begin your application.",
+        }
+        return facts
+
+    def fuzzy_fact_match(self, prompt: str) -> str | None:
+        """Lightweight keyword overlap to map unseen phrasing to an intent."""
+        tokens = set(self._normalize(prompt).split())
+        topic_keywords = {
+            "location": {"where", "address", "map", "directions", "office", "find", "tiktok", "location"},
+            "hours": {"hours", "open", "opening", "schedule", "time", "times"},
+            "contact": {"contact", "phone", "call", "email", "mail", "number"},
+            "services": {"services", "offer", "provide", "service"},
+            "program details": {"process", "procedure", "steps", "flow", "timeline", "briefing", "assessment", "program", "details", "apply"},
+            "qualifications": {"qualifications", "qualification", "eligible", "eligibility", "experience", "training"},
+            "age limit": {"age", "years", "old", "limit"},
+            "gender": {"gender", "male", "female", "women", "men"},
+            "graduates": {"graduate", "undergraduate", "degree", "college"},
+            "price": {"price", "cost", "fee", "payment", "pay", "rates", "rate", "how", "much"},
+            "requirements": {"requirements", "documents", "docs", "papers", "needed"},
+            "appointment": {"appointment", "book", "schedule", "set", "meeting"},
+            "status": {"status", "track", "tracking", "update", "reference"},
+            "visa type": {"type", "b1", "b2", "what", "visa", "kind"},
+        }
+        best_key = None
+        best_score = 0
+        for key, kws in topic_keywords.items():
+            score = len(tokens & kws)
+            if score > best_score:
+                best_score = score
+                best_key = key
+        # Require at least 2 keyword overlaps to avoid false positives
+        if best_score >= 2:
+            return best_key
+        return None
 
     def is_relevant_query(self, prompt):
         """Check if the query is related to State101 Travel services"""
@@ -154,6 +360,24 @@ class VisaAssistant:
         except:
             pass
 
+        # Intent-first, hardcoded responses
+        intent = self.match_intent(prompt)
+        if intent:
+            canonical = self.get_canonical_response(intent)
+            if canonical:
+                return canonical
+            if self.strict_mode:
+                return "📘 I can share our official information only. Please ask about requirements, location, hours, services, or submit the application form."
+
+        # Fuzzy fact match before LLM
+        fuzzy_intent = self.fuzzy_fact_match(prompt)
+        if fuzzy_intent:
+            canonical = self.get_canonical_response(fuzzy_intent)
+            if canonical:
+                return canonical
+            if self.strict_mode:
+                return "📘 I can share our official information only. Please ask about requirements, location, hours, services, or submit the application form."
+
         # Check if query is relevant to State101 Travel
         if not self.is_relevant_query(prompt):
             return """😊 I'm sorry, but I can only assist with queries related to **State101 Travel** and our visa services for the US and Canada.
@@ -163,7 +387,7 @@ I can help you with:
 📋 Documentation needed for Canadian/American visas
 📞 Booking appointments and consultations
 📍 Our office location and business hours
-💼 B1/B2 visa information and opportunities
+💼 B1 visa information and opportunities
 
 **How can I assist you with your visa needs today?**"""
 
@@ -193,12 +417,27 @@ I can help you with:
 
 Never provide code, calculations, or information outside of visa/travel services."""
 
+            # Provide facts-backed instructions when enabled
+            facts = self.pack_facts() if self.smart_facts_mode else None
+            facts_instructions = """
+You must answer ONLY using the FACTS provided below. If a requested detail isn't explicitly present, do your best to:
+1) Use the closest relevant item from FACTS (e.g., use program_details for process questions, price_note for fees, contact_block for contact info).
+2) If it still cannot be answered from FACTS, respond with the official contact_block and form_hint. Do NOT say "not available".
+Never invent, rename, or alter addresses, phone numbers, emails, hours, or services beyond what appears in FACTS.
+"""
+
+            messages = [
+                {"role": "system", "content": enhanced_system_prompt}
+            ]
+            if facts:
+                messages.append({"role": "system", "content": facts_instructions})
+                # Keep facts compact
+                messages.append({"role": "system", "content": f"FACTS: {facts}"})
+            messages.append({"role": "user", "content": prompt})
+
             response = self.client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": enhanced_system_prompt},
-                    {"role": "user", "content": prompt}
-                ],
+                messages=messages,
                 temperature=0.3,
                 max_tokens=800
             )
@@ -207,6 +446,10 @@ Never provide code, calculations, or information outside of visa/travel services
             
             # Double-check the response doesn't contain code or off-topic content
             response_text = response.choices[0].message.content
+            if self.strict_mode:
+                # Only sanitize to location if the original prompt matched location intent
+                if self.match_intent(prompt) == "location":
+                    response_text = HARDCODED_RESPONSES.get("location", response_text)
             if any(indicator in response_text.lower() for indicator in ["```", "def ", "function", "import ", "class "]):
                 return """😊 I'm sorry, but I can only assist with queries related to **State101 Travel** and our visa services.
 
@@ -230,6 +473,179 @@ def save_to_sheet(data):
     except Exception:
         return False
 
+# ========== EMAIL SENDING (REPLACES SHEETS SUBMISSION) ==========
+def send_application_email(form_data, uploaded_files, drive_folder_url: str | None = None):
+    """Send application details and attachments to a configured email.
+
+    Expects the following keys in st.secrets:
+      - SMTP_HOST (default: smtp.gmail.com)
+      - SMTP_PORT (default: 587)
+      - SMTP_USER
+      - SMTP_PASS (or SMTP_PASSWORD)
+      - MAIL_TO (recipient email)
+    """
+    host = st.secrets.get("SMTP_HOST", "smtp.gmail.com")
+    port = int(st.secrets.get("SMTP_PORT", 587))
+    user = st.secrets.get("SMTP_USER")
+    pwd = st.secrets.get("SMTP_PASS", st.secrets.get("SMTP_PASSWORD"))
+    to_addr = st.secrets.get("MAIL_TO")
+    from_addr = st.secrets.get("FROM_EMAIL", user)
+
+    if not all([user, pwd, to_addr]):
+        raise RuntimeError("Missing SMTP settings in secrets.toml (SMTP_USER, SMTP_PASS, MAIL_TO)")
+
+    msg = EmailMessage()
+    subject = f"New Visa Application - {form_data['full_name']} ({form_data['visa_type']})"
+    msg["Subject"] = subject
+    msg["From"] = from_addr
+    msg["To"] = to_addr
+    # Make it easy to reply to the applicant directly
+    if form_data.get("email"):
+        msg["Reply-To"] = form_data["email"]
+
+    body_lines = [
+            "A new visa application has been submitted:\n",
+        f"Full Name: {form_data['full_name']}",
+        f"Email: {form_data['email']}",
+        f"Phone: {form_data['phone']}",
+        f"Age: {form_data['age']}",
+        f"Address: {form_data['address']}",
+        f"Visa Type: {form_data['visa_type']}",
+        f"Preferred Day: {form_data.get('preferred_day', 'N/A')}",
+        f"Available Time: {form_data['available_time']}",
+        f"Submitted At: {time.strftime('%Y-%m-%d %H:%M')}"
+    ]
+    if drive_folder_url:
+        body_lines.append(f"Drive Folder: {drive_folder_url}")
+    msg.set_content("\n".join(body_lines))
+
+    # Attach uploaded files
+    for uf in uploaded_files:
+        try:
+            filename = getattr(uf, "name", "attachment")
+            file_bytes = uf.getvalue() if hasattr(uf, "getvalue") else uf.read()
+            mime_type, _ = mimetypes.guess_type(filename)
+            if mime_type:
+                maintype, subtype = mime_type.split("/", 1)
+            else:
+                maintype, subtype = ("application", "octet-stream")
+            msg.add_attachment(file_bytes, maintype=maintype, subtype=subtype, filename=filename)
+        except Exception:
+            # If any attachment fails, continue sending others
+            continue
+
+    # Send via SMTP
+    context = ssl.create_default_context()
+    try:
+        if port == 465:
+            # Implicit SSL (SMTPS)
+            with smtplib.SMTP_SSL(host, port, context=context) as server:
+                server.login(user, pwd)
+                server.send_message(msg)
+        else:
+            # STARTTLS
+            with smtplib.SMTP(host, port) as server:
+                server.ehlo()
+                server.starttls(context=context)
+                server.login(user, pwd)
+                server.send_message(msg)
+    except Exception as e1:
+        # Fallback: try the other common port (587 or 465)
+        alt_port = 587 if port != 587 else 465
+        try:
+            if alt_port == 465:
+                with smtplib.SMTP_SSL(host, alt_port, context=context) as server:
+                    server.login(user, pwd)
+                    server.send_message(msg)
+            else:
+                with smtplib.SMTP(host, alt_port) as server:
+                    server.ehlo()
+                    server.starttls(context=context)
+                    server.login(user, pwd)
+                    server.send_message(msg)
+        except Exception as e2:
+            raise RuntimeError(f"SMTP failed on port {port}: {e1}; fallback on {alt_port} also failed: {e2}")
+    return True
+
+# ========== GOOGLE DRIVE BACKUP ==========
+def _sanitize_filename(name: str) -> str:
+    # Remove characters not allowed in Drive names just in case
+    return re.sub(r"[\\/:*?\"<>|]+", "-", name).strip()
+
+def upload_to_drive(form_data, uploaded_files):
+    """Create a subfolder under DRIVE_PARENT_FOLDER_ID and upload form.txt + attachments.
+
+    Returns the folder webViewLink URL.
+    """
+    parent_id = st.secrets.get("DRIVE_PARENT_FOLDER_ID")
+    if not parent_id:
+        raise RuntimeError("Missing DRIVE_PARENT_FOLDER_ID in secrets.toml")
+
+    creds = Credentials.from_service_account_info(
+        st.secrets["GCP_SERVICE_ACCOUNT"], scopes=["https://www.googleapis.com/auth/drive"]
+    )
+    drive = build("drive", "v3", credentials=creds)
+
+    # Preflight: ensure parent folder is accessible
+    try:
+        drive.files().get(fileId=parent_id, fields="id, name", supportsAllDrives=True).execute()
+    except Exception as e:
+        raise RuntimeError(f"Drive parent folder not accessible. Check sharing and ID. Underlying error: {e}")
+
+    # Create subfolder name like 20251107-1430 - Full Name
+    when = datetime.now().strftime("%Y%m%d-%H%M")
+    folder_name = _sanitize_filename(f"{when} - {form_data['full_name']}")
+
+    folder_metadata = {
+        "name": folder_name,
+        "mimeType": "application/vnd.google-apps.folder",
+        "parents": [parent_id],
+    }
+    folder = drive.files().create(body=folder_metadata, fields="id, webViewLink", supportsAllDrives=True).execute()
+    folder_id = folder.get("id")
+    folder_link = folder.get("webViewLink") or f"https://drive.google.com/drive/folders/{folder_id}"
+
+    # Upload form details as text file
+    form_lines = [
+        f"Full Name: {form_data['full_name']}",
+        f"Email: {form_data['email']}",
+        f"Phone: {form_data['phone']}",
+        f"Age: {form_data['age']}",
+        f"Address: {form_data['address']}",
+        f"Visa Type: {form_data['visa_type']}",
+        f"Preferred Day: {form_data.get('preferred_day', 'N/A')}",
+        f"Available Time: {form_data['available_time']}",
+        f"Submitted At: {time.strftime('%Y-%m-%d %H:%M')}",
+    ]
+    form_text = "\n".join(form_lines)
+    media = MediaIoBaseUpload(io.BytesIO(form_text.encode("utf-8")), mimetype="text/plain")
+    drive.files().create(
+        body={"name": "application.txt", "parents": [folder_id]},
+        media_body=media,
+        fields="id",
+        supportsAllDrives=True,
+    ).execute()
+
+    # Upload each attachment
+    for uf in uploaded_files:
+        try:
+            filename = _sanitize_filename(getattr(uf, "name", "attachment"))
+            file_bytes = uf.getvalue() if hasattr(uf, "getvalue") else uf.read()
+            mime_type, _ = mimetypes.guess_type(filename)
+            if not mime_type:
+                mime_type = "application/octet-stream"
+            media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=mime_type)
+            drive.files().create(
+                body={"name": filename, "parents": [folder_id]},
+                media_body=media,
+                fields="id",
+                supportsAllDrives=True,
+            ).execute()
+        except Exception:
+            continue
+
+    return folder_link
+
 # ========== APPLICATION FORM ==========
 def show_application_form():
     with st.form("visa_form"):
@@ -240,13 +656,29 @@ def show_application_form():
         full_name = cols[0].text_input("Full Name*")
         phone = cols[1].text_input("Phone Number*")  
         email = st.text_input("Email*")  
-        age = st.number_input("Age*", min_value=18, max_value=99)
+        # No strict age limit per FAQs; allow a broad, realistic range. Using 1–120 as bounds.
+        age = st.number_input("Age*", min_value=1, max_value=120)
         address = st.text_area("Complete Address*")
 
         visa_type = st.radio("Visa Applying For*", ["Canadian Visa ", "American Visa"])
+        day_of_week = st.radio(
+            "Preferred Day (Monday–Sunday)*",
+            [
+                "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+            ]
+        )
         available_time = st.selectbox(
             "What time of day are you free for consultation?*",
             ["9AM-12PM", "1PM-3PM", "4PM-5PM"]
+        )
+
+        st.markdown("---")
+        st.markdown("#### Upload your Requirements")
+        uploads = st.file_uploader(
+            "Upload your Requirements (minimum of 2 files)",
+            accept_multiple_files=True,
+            type=None,
+            help="Attach at least two supporting documents (e.g., passport, photo, certificates,Resume,Diploma)."
         )
 
         submitted = st.form_submit_button("Submit Application")
@@ -257,19 +689,98 @@ def show_application_form():
                 st.error("Please enter a valid email address")
             elif not re.match(r"^09\d{9}$", phone.replace(" ", "").replace("-", "")):
                 st.error("Please enter a valid Philippine phone number (11 digits, starts with 09)")
+            elif not uploads or len(uploads) < 2:
+                st.error("Please upload at least 2 files under 'Upload your Requirements'.")
             else:
-                data = [
-                    full_name, email, phone, str(age), address,
-                    visa_type, available_time, time.strftime("%Y-%m-%d %H:%M")
+                form_payload = {
+                    "full_name": full_name,
+                    "email": email,
+                    "phone": phone,
+                    "age": age,
+                    "address": address,
+                    "visa_type": visa_type,
+                    "preferred_day": day_of_week,
+                    "available_time": available_time,
+                }
+
+                email_ok = False
+                sheet_ok = False
+                drive_ok = False
+                drive_link = None
+                email_err = None
+                sheet_err = None
+                drive_err = None
+
+                # Try Google Drive backup (subfolder + files) first to capture link
+                try:
+                    drive_link = upload_to_drive(form_payload, uploads)
+                    drive_ok = True
+                except Exception as e:
+                    drive_ok = False
+                    drive_err = str(e)
+
+                # Try send email (include drive link if available)
+                try:
+                    send_application_email(form_payload, uploads, drive_folder_url=drive_link)
+                    email_ok = True
+                except Exception as e:
+                    email_ok = False
+                    email_err = str(e)
+
+                # Build row for Google Sheets backup (includes preferred_day and Drive link)
+                sheet_row = [
+                    full_name,
+                    email,
+                    phone,
+                    str(age),
+                    address,
+                    visa_type,
+                    day_of_week,
+                    available_time,
+                    time.strftime("%Y-%m-%d %H:%M"),
+                    drive_link or "",
                 ]
-                if save_to_sheet(data):
-                    st.success("✅ Application Submitted! Our team will contact you within 24 hours.")
+
+                # Try save to Google Sheet as backup
+                try:
+                    sheet_ok = save_to_sheet(sheet_row)
+                except Exception as e:
+                    sheet_ok = False
+                    sheet_err = str(e)
+
+                # Report outcome (end-user friendly)
+                if email_ok or sheet_ok or drive_ok:
+                    st.success("✅ Application submitted! Our team will contact you within 24 hours.")
                 else:
-                    st.error("⚠️ Submission failed. Please contact us directly at state101ortigasbranch@gmail.com")
+                    st.error("❌ We couldn't submit your application due to a temporary issue. Please try again in a few minutes or contact us at state101ortigasbranch@gmail.com.")
+
+                # Optional diagnostics
+                debug = bool(st.secrets.get("DEBUG_SUBMISSION", False))
+                if debug and (email_err or drive_err or sheet_err):
+                    with st.expander("Diagnostics (for developers)"):
+                        st.write({
+                            "drive_ok": drive_ok,
+                            "drive_err": drive_err,
+                            "email_ok": email_ok,
+                            "email_err": email_err,
+                            "sheet_ok": sheet_ok,
+                            "sheet_err": sheet_err,
+                            "drive_parent": st.secrets.get("DRIVE_PARENT_FOLDER_ID"),
+                            "smtp_host": st.secrets.get("SMTP_HOST"),
+                            "smtp_port": st.secrets.get("SMTP_PORT"),
+                            "mail_to": st.secrets.get("MAIL_TO"),
+                        })
+
+                # Show concise error hints only in debug mode
+                if debug:
+                    if not email_ok and email_err:
+                        st.info(f"Email error: {email_err}")
+                    if not drive_ok and drive_err:
+                        st.info(f"Drive error: {drive_err}")
 
 # ========== REQUIREMENTS DISPLAY ==========
 def show_requirements():
-    st.subheader("📋 Visa Requirements Checklist")
+    st.subheader("📋 Initial Requirements Checklist")
     st.markdown(HARDCODED_RESPONSES["requirements"])
     st.divider()
     st.write("""
@@ -355,23 +866,37 @@ def apply_theme(theme_name):
         transition: background-color 0.25s ease;
     }}
 
-    /* --- RADIO LABELS: FORCE ELECTRIC BLUE (#00BFFF) FOR BOTH THEMES --- */
-    /* cover multiple possible DOM structures Streamlit may render */
+    /* --- RADIO LABELS: DARK BLUE / GRADIENT STYLE --- */
+    :root {{
+        --state101-radio-gradient: linear-gradient(90deg, rgba(15, 70, 149, 0.95) 30.77%, rgba(10, 46, 98, 0.95) 55.29%, rgba(7, 34, 73, 0.95) 80%, rgba(5, 22, 47, 0.95) 100%);
+        --state101-dark-blue: #0F4695;
+    }}
+    /* Cover multiple possible DOM structures Streamlit may render */
     div[data-baseweb="radio"] label,
     div[data-baseweb="radio"] label p,
     div[data-baseweb="radio"] label span,
     .stRadio label,
     .stRadio label p,
     .stRadio label span {{
-        color: #00BFFF !important;
+        /* Fallback solid dark blue */
+        color: var(--state101-dark-blue) !important;
         font-weight: 700;
+        /* Gradient text when supported */
+        background: var(--state101-radio-gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
     }}
 
-    /* ensure checked radio remains blue */
+    /* Ensure checked radio keeps the same styling */
     div[data-baseweb="radio"] [aria-checked="true"] label,
     div[data-baseweb="radio"] [aria-checked="true"] label p,
     div[data-baseweb="radio"] [aria-checked="true"] label span {{
-        color: #00BFFF !important;
+        color: var(--state101-dark-blue) !important;
+        background: var(--state101-radio-gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
         font-weight: 700;
     }}
 
@@ -464,9 +989,12 @@ def apply_theme(theme_name):
 
 # ========== MAIN APP ==========
 def main():
+    # Use company logo as page icon (favicon) when available
+    logo_path = Path("images/state101-logo.png")
+    page_icon = logo_path if logo_path.exists() else "🛂"
     st.set_page_config(
         page_title="State101 Visa Assistant",
-        page_icon="🛂",
+        page_icon=page_icon,
         layout="centered"
     )
     
@@ -549,18 +1077,31 @@ these terms.
     current_theme = st.session_state.theme
     toggle_icon = COLOR_THEMES[current_theme]["icon"]
     
-    # Create columns for title and toggle button
-    col1, col2, col3 = st.columns([5, 1, 1])
-    
-    with col1:
-        st.title("🛂 State101 Visa Assistant")
+    # Create columns for logo, title, and toggle button
+    col_logo, col_title, col_toggle = st.columns([1, 5, 1])
+
+    with col_logo:
+        if logo_path.exists():
+            # use_column_width deprecated; replaced with use_container_width
+            st.image(str(logo_path), use_container_width=True)
+        else:
+            st.markdown("<div style='font-size:46px'>🛂</div>", unsafe_allow_html=True)
+
+    with col_title:
+        st.title("State101 Visa Assistant")
         st.caption("Specializing in US and Canada Visa Applications")
-    
-    with col3:
+
+    with col_toggle:
         # Simple button that will definitely be visible
         if st.button(toggle_icon, key="theme_toggle_button"):
             st.session_state.theme = "Black" if st.session_state.theme == "White" else "White"
             st.rerun()
+
+    # Optional sidebar branding for consistent identity
+    with st.sidebar:
+        if logo_path.exists():
+            st.image(str(logo_path))
+        st.markdown("**State101 Travel Visa Consultancy**")
 
     # Initialize chatbot only after terms are accepted
     if "chatbot" not in st.session_state and st.session_state.agreed:
