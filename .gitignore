@@ -1,0 +1,62 @@
+# --- Python bytecode/cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+.conda/
+.python-version
+
+# --- Build/artifacts ---
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# --- Tests/coverage/tools caches ---
+.pytest_cache/
+.mypy_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
+.cache/
+
+# --- Logs/temp ---
+*.log
+logs/
+tmp/
+*.tmp
+*.temp
+
+# --- Environment files ---
+.env
+.env.*
+*.env
+
+# --- Streamlit ---
+# Keep config.toml if you have one; ignore secrets only
+.streamlit/secrets.toml
+
+# --- Credentials (keep public configs, ignore private keys/tokens) ---
+credentials*.json
+service_account*.json
+client_secret*.json
+token*.json
+gcp-*.json
+
+# --- Editors/OS ---
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Jupyter (if any) ---
+.ipynb_checkpoints/
