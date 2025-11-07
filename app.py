@@ -855,7 +855,21 @@ def apply_theme(theme_name):
     .stTextInput>div>div>input, .stTextArea>div>div>textarea {{
         background-color: {theme['secondary']};
         color: {theme['text']};
-        transition: background-color 0.25s ease, color 0.25s ease;
+        border: 1px solid {theme['text']};
+        border-radius: 6px;
+        transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    }}
+    /* Placeholder readability */
+    .stTextInput>div>div>input::placeholder,
+    .stTextArea>div>div>textarea::placeholder {{
+        color: {theme['text_secondary']};
+        opacity: 1; /* ensure visibility across browsers */
+    }}
+    /* Focus visibility */
+    .stTextInput>div>div>input:focus,
+    .stTextArea>div>div>textarea:focus {{
+        outline: 2px solid {theme['accent']};
+        border-color: {theme['accent']};
     }}
 
     /* Radio container */
@@ -892,6 +906,11 @@ def apply_theme(theme_name):
     .stSelectbox>div>div {{
         background-color: {theme['secondary']};
         color: {theme['text']};
+        border: 1px solid {theme['text']};
+        border-radius: 6px;
+    }}
+    .stSelectbox>div:focus-within {{
+        outline: 2px solid {theme['accent']};
     }}
 
     /* Chat messages */
@@ -920,26 +939,39 @@ def apply_theme(theme_name):
         color: {theme['text']} !important;
    }}
 
-                /* Success / error boxes - robust override for Streamlit alerts */
+        /* Alerts: theme-aware for both light and dark */
         .stSuccess, .stError,
         div[role="status"], div[role="alert"],
         div[data-testid="stStatusWidget"], div[data-testid="stAlert"],
         div[class*="stAlert"] {{
-            background-color: #000000 !important;
-            color: #FFFFFF !important;
+            background-color: {theme['secondary']} !important;
+            color: {theme['text']} !important;
             font-weight: 600 !important;
             border-radius: 6px !important;
             padding: 0.5rem 0.75rem !important;
+            border-left: 4px solid {theme['accent']} !important;
             box-shadow: none !important;
         }}
 
-        /* ensure text inside the alerts is white */
+        /* ensure text inside the alerts is visible */
         div[role="status"] p, div[role="alert"] p,
         div[data-testid="stStatusWidget"] p, div[data-testid="stAlert"] p,
         .stSuccess p, .stError p {{
-            color: #FFFFFF !important;
+            color: {theme['text']} !important;
             margin: 0;
         }}
+
+    /* File uploader visibility */
+    div[data-testid="stFileUploader"] {{
+        background: {theme['secondary']};
+        color: {theme['text']};
+        border: 1px solid {theme['text']};
+        border-radius: 6px;
+        padding: 8px 12px;
+    }}
+    div[data-testid="stFileUploader"] * {{
+        color: {theme['text']};
+    }}
     /* Divider */
     .stDivider {{
         border-color: {theme['text']} !important;
