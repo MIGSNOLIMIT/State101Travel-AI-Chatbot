@@ -675,7 +675,7 @@ def show_application_form():
         st.markdown("---")
         st.markdown("#### Upload your Requirements")
         uploads = st.file_uploader(
-            "Upload your Requirements (minimum of 2 files)",
+            "Upload your Requirements (minimum of 2 files e.g., passport, photo, certificates, Resume, Diploma)",
             accept_multiple_files=True,
             type=None,
             help="Attach at least two supporting documents (e.g., passport, photo, certificates,Resume,Diploma)."
@@ -866,38 +866,26 @@ def apply_theme(theme_name):
         transition: background-color 0.25s ease;
     }}
 
-    /* --- RADIO LABELS: DARK BLUE / GRADIENT STYLE --- */
-    :root {{
-        --state101-radio-gradient: linear-gradient(90deg, rgba(15, 70, 149, 0.95) 30.77%, rgba(10, 46, 98, 0.95) 55.29%, rgba(7, 34, 73, 0.95) 80%, rgba(5, 22, 47, 0.95) 100%);
-        --state101-dark-blue: #0F4695;
-    }}
-    /* Cover multiple possible DOM structures Streamlit may render */
+    /* --- RADIO LABELS: UNIFIED TEXT COLOR FOR ACCESSIBILITY --- */
     div[data-baseweb="radio"] label,
     div[data-baseweb="radio"] label p,
     div[data-baseweb="radio"] label span,
     .stRadio label,
     .stRadio label p,
     .stRadio label span {{
-        /* Fallback solid dark blue */
-        color: var(--state101-dark-blue) !important;
-        font-weight: 700;
-        /* Gradient text when supported */
-        background: var(--state101-radio-gradient);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: {theme['text']} !important;  /* match standard body text */
+        font-weight: 600;
+        background: none !important;
+        -webkit-background-clip: initial !important;
+        -webkit-text-fill-color: {theme['text']} !important;
     }}
 
-    /* Ensure checked radio keeps the same styling */
+    /* Highlight the selected radio option slightly using the accent color */
     div[data-baseweb="radio"] [aria-checked="true"] label,
     div[data-baseweb="radio"] [aria-checked="true"] label p,
     div[data-baseweb="radio"] [aria-checked="true"] label span {{
-        color: var(--state101-dark-blue) !important;
-        background: var(--state101-radio-gradient);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 700;
+        color: {theme['accent']} !important;
+        -webkit-text-fill-color: {theme['accent']} !important;
     }}
 
     /* Select boxes */
