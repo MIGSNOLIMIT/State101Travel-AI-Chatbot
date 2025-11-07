@@ -995,7 +995,7 @@ def main():
     st.set_page_config(
         page_title="State101 Visa Assistant",
         page_icon=page_icon,
-        layout="centered"
+        layout="wide"  # reclaim full width since we remove the sidebar
     )
     
     # Initialize theme in session state
@@ -1097,11 +1097,17 @@ these terms.
             st.session_state.theme = "Black" if st.session_state.theme == "White" else "White"
             st.rerun()
 
-    # Optional sidebar branding for consistent identity
-    with st.sidebar:
-        if logo_path.exists():
-            st.image(str(logo_path))
-        st.markdown("**State101 Travel Visa Consultancy**")
+    # Remove sidebar entirely (logo + container)
+    st.markdown(
+        """
+        <style>
+          [data-testid="stSidebar"], .css-1d391kg { display: none !important; }
+          /* widen main container after hiding sidebar */
+          .block-container { padding-left: 2rem !important; padding-right: 2rem !important; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     # Initialize chatbot only after terms are accepted
     if "chatbot" not in st.session_state and st.session_state.agreed:
