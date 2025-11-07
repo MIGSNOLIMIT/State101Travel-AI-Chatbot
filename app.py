@@ -995,7 +995,7 @@ def main():
     st.set_page_config(
         page_title="State101 Visa Assistant",
         page_icon=page_icon,
-        layout="wide"  # reclaim full width since we remove the sidebar
+        layout="centered"  # center the main content for better desktop/mobile look
     )
     
     # Initialize theme in session state
@@ -1097,17 +1097,30 @@ these terms.
             st.session_state.theme = "Black" if st.session_state.theme == "White" else "White"
             st.rerun()
 
-    # Remove sidebar entirely (logo + container)
-    st.markdown(
-        """
-        <style>
-          [data-testid="stSidebar"], .css-1d391kg { display: none !important; }
-          /* widen main container after hiding sidebar */
-          .block-container { padding-left: 2rem !important; padding-right: 2rem !important; }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+        # Remove sidebar entirely and center the main container with a clean max-width
+        st.markdown(
+                """
+                <style>
+                    /* Hide sidebar */
+                    [data-testid=stSidebar], .css-1d391kg { display: none !important; }
+
+                    /* Center the main content with responsive max width */
+                    .block-container {
+                        max-width: 900px;          /* good balance for desktop */
+                        margin-left: auto;
+                        margin-right: auto;
+                        padding-left: 1.25rem !important;
+                        padding-right: 1.25rem !important;
+                    }
+
+                    /* Mobile tweaks */
+                    @media (max-width: 640px) {
+                        .block-container { max-width: 100%; padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+                    }
+                </style>
+                """,
+                unsafe_allow_html=True,
+        )
 
     # Initialize chatbot only after terms are accepted
     if "chatbot" not in st.session_state and st.session_state.agreed:
