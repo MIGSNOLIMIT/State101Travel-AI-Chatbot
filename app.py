@@ -966,11 +966,34 @@ def apply_theme(theme_name):
         background: {theme['secondary']};
         color: {theme['text']};
         border: 1px solid {theme['text']};
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 8px 12px;
     }}
-    div[data-testid="stFileUploader"] * {{
-        color: {theme['text']};
+    /* Dropzone area (cover common internal structures) */
+    div[data-testid="stFileUploader"] [data-testid*="Dropzone"],
+    div[data-testid="stFileUploader"] [class*="dropzone" i],
+    div[data-testid="stFileUploader"] section,  /* fallback for versions rendering a <section> */
+    div[data-testid="stFileUploader"] div[role="button"] {{ /* clickable drop area */
+        background: {theme['secondary']} !important;
+        color: {theme['text']} !important;
+        border: 2px dashed {theme['text']} !important;
+        border-radius: 8px !important;
+    }}
+    /* Typography inside dropzone */
+    div[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploader"] span,
+    div[data-testid="stFileUploader"] svg {{
+        color: {theme['text']} !important;
+        fill: {theme['text']} !important;
+        opacity: 0.95;
+    }}
+    /* Browse/choose button inside uploader */
+    div[data-testid="stFileUploader"] button {{
+        background-color: {theme['button']} !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 4px 10px !important;
     }}
     /* Divider */
     .stDivider {{
