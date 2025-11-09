@@ -17,6 +17,56 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import io
 from datetime import datetime
+from typing import List, Tuple
+from rapidfuzz import fuzz
+import importlib
+import math
+from email_validator import validate_email, EmailNotValidError
+import phonenumbers
+try:
+    # Optional top-level import so it's visible in the file header when installed
+    # Falls back gracefully if the package isn't present
+    from fastembed import TextEmbedding as _FASTEMBED_TEXTEMBEDDING
+except Exception:
+    _FASTEMBED_TEXTEMBEDDING = None
+
+# ====== DIALOG SUPPORT (modal fallback if available) ======
+_DIALOG_DECORATOR = getattr(st, "dialog", None) or getattr(st, "experimental_dialog", None)
+if _DIALOG_DECORATOR:
+    @_DIALOG_DECORATOR("Submit without uploads?")
+    def _no_uploads_modal():
+        # Theme-aware styling to fit current chatbot UI
+        theme_name = st.session_state.get("theme", "White")
+        theme = COLOR_THEMES.get(theme_name, COLOR_THEMES["White"])
+        accent = theme.get("accent", "#DC143C")
+        secondary = theme.get("secondary", "#F5F5F5")
+        text_color = theme.get("text", "#000000")
+
+        st.markdown(
+            f"""
+            <div style="padding:10px 12px; background:{secondary}; color:{text_color};
+                        border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
+                <div style="color:#b00020; font-weight:700;">Note: this can help us improve efficiency</div>
+            </div>
+            <div style="margin:6px 0 12px 0; color:{text_color}; font-weight:600;">
+                Are you sure you don't want to upload any requirements yet?
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Yes, submit without uploads", key="modal_yes_submit", use_container_width=True):
+                st.session_state["no_uploads_confirmed"] = True
+                st.session_state["trigger_no_uploads_modal"] = False
+                st.rerun()
+        with col2:
+            if st.button("No, I'll upload files", key="modal_no_cancel", use_container_width=True):
+                st.session_state["no_uploads_confirmed"] = False
+                st.session_state["trigger_no_uploads_modal"] = False
+                st.session_state["pending_form_payload"] = None
+                # Close dialog on rerun
+                st.rerun()
 
 # ========== SYSTEM PROMPT ==========
 SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for State101Travel specializing in US/Canada visa assistance. Your role is to:
@@ -64,66 +114,110 @@ google map link: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8 ."
 
 # ========== HARDCODED RESPONSES ==========
 HARDCODED_RESPONSES = {
-"requirements": """🛂 **Visa Requirements**:\n- Valid passport (Photocopy)\n- 2x2 photo (white background)\n- Training Certificate(if available)\n- Diploma(Photocopy if available)\n- Updated Resume""",
-    "appointment": "⏰ Strictly by appointment only. Please submit the application form first.",
-    
-    "hours": "🕘 Open Mon-Sat 9AM-5PM",
-    "opportunities": "💼 B1 Visa Includes 6-month care-giving training program with our Partner homecare facilities in US.",
+    # Core information
+    "requirements": """🛂 **Visa Requirements**:
+- Valid passport (Photocopy)
+- 2x2 photo (white background)
+- Training Certificate (if available)
+- Diploma (Photocopy if available)
+- Updated Resume
+- Other supporting documents may be discussed during your assessment.""",
+    "appointment": "📅 We accept walk-in clients with or without an appointment, but we highly recommend booking an appointment first to ensure we can accommodate you promptly.",
+    "hours": "🕘 Open Monday to Saturday, 9:00 AM to 5:00 PM.",
     "business hours": "🕘 We're open Monday to Saturday, 9:00 AM to 5:00 PM.",
+    "opportunities": "💼 B1 Visa includes a 6-month care-giving training program with our partner homecare facilities in the US.",
     "located": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
     "map": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
     "location": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
+    "website": "🌐 Official Website: https://state101-travel-website.vercel.app/\n\nFor appointments and quick assistance, you can also contact us:\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n🗺️ Map: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8",
     "processing time": "⏳ Standard processing takes 2-4 weeks. Expedited services may be available.",
     "complex": "🔍 For case-specific advice, please contact our specialists directly:\n📞 0961 084 2538\n📧 state101ortigasbranch@gmail.com",
-    "status": "🔄 For application status updates, please email us with your reference number.",
+    "status": "🔄 For application status updates, please email us with your reference number or contact us at +63 905-804-4426 / +63 969-251-0672.",
     "urgent": "⏰ For urgent concerns, call us at +63 905-804-4426 or +63 969-251-0672 during business hours.",
-    "how much": "💰 For pricing information, please proceed to the Application Form for Initial Assessment and expect a phone call within 24 hours.\n\n📞 You may also contact us directly:\n+63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
-    "price": "💰 For pricing information, please proceed to the Application Form for Initial Assessment and expect a phone call within 24 hours.\n\n📞 You may also contact us directly:\n+63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
-    "cost": "💰 For pricing information, please proceed to the Application Form for Initial Assessment and expect a phone call within 24 hours.\n\n📞 You may also contact us directly:\n+63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
-    "fee": "💰 For pricing information, please proceed to the Application Form for Initial Assessment and expect a phone call within 24 hours.\n\n📞 You may also contact us directly:\n+63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
-    "payment": "💳 For payment options and pricing details, please contact us directly:\n\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM\n\n✅ Services are by appointment only. Please complete the Application Form for initial assessment.",
-    "payment options": "💳 For payment options and pricing details, please contact us directly:\n\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM\n\n✅ Services are by appointment only. Please complete the Application Form for initial assessment.",
-    "pay": "💳 For payment options and pricing details, please contact us directly:\n\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM\n\n✅ Services are by appointment only. Please complete the Application Form for initial assessment.",
+    
+    # Pricing and payments
+    "how much": "💰 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "price": "💰 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "cost": "💰 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "fee": "💰 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "payment": "💳 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "payment options": "💳 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "pay": "💳 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+
+    # Legitimacy
     "legit": "✅ Yes, our company is 100% legitimate. We’re officially registered and have a permit to operate issued by the Municipality of Pasig.",
-    
-    # === FAQs added per request ===
-    # Services
-    "services": "🛂 We provide full assistance with US visa applications and processing.",
-    "what services do you offer": "🛂 We provide full assistance with US visa applications and processing.",
-    
-    # Other countries
-    "other countries": "🌍 We currently don’t offer visa assistance for other countries. Our services are focused on US visa processing.",
-    "do you also offer visas to other countries": "🌍 We currently don’t offer visa assistance for other countries. Our services are focused on US visa processing.",
-    
-    # Legitimacy (extra trigger)
     "is your company legit": "✅ Yes, our company is 100% legitimate. We’re officially registered and have a permit to operate issued by the Municipality of Pasig.",
-    
-    # Program details
+
+    # Services (updated to include Canada)
+    "services": "🛂 We provide full assistance with US and Canada visa applications and processing.",
+    "what services do you offer": "🛂 We provide full assistance with US and Canada visa applications and processing.",
+
+    # Other countries
+    "other countries": "🌍 We currently don’t offer visa assistance for other countries. Our services are focused on US and Canada visa processing.",
+    "do you also offer visas to other countries": "🌍 We currently don’t offer visa assistance for other countries. Our services are focused on US and Canada visa processing.",
+
+    # Program details and FAQs that redirect to briefing
     "program details": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
     "details of your program": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    
-    # Visa type offered
-    "visa type": "🛂 We offer the B1 Non-Immigrant Visa.",
-    "what type of visa you offer": "🛂 We offer the B1 Non-Immigrant Visa.",
-    
-    # Qualifications
+    "are trainings free": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "is orientation free": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "installment plans": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "hidden charges": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+    "consultation free": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
+
+    # Visa type offered (updated)
+    "visa type": "🛂 We offer Non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada.",
+    "what type of visa you offer": "🛂 We offer Non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada.",
+
+    # Qualifications & policies
     "qualifications": "✅ Open to applicants with or without prior training or experience. Applicants must be willing to undergo training and develop the necessary skills for the program.",
-    
-    # Age
-    "age limit": "👥 There is no strict age limit, provided the applicant is physically capable of performing the required tasks.",
-    
-    # Gender
+    "age limit": "👥 No age limit, provided the applicant is physically capable of performing the required tasks.",
     "is there genders required": "⚧ Open to all genders.",
     "gender": "⚧ Open to all genders.",
-    
-    # Graduates
     "does it accept graduates only": "🎓 Accepts both graduates and undergraduates.",
     "graduates": "🎓 Accepts both graduates and undergraduates.",
+
+    # Additional FAQs from user list
+    "how can i contact your team": "📞 You can contact us directly: +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com",
+    "is there a guarantee of visa approval": "✅ We are here to guide you from start to finish and help increase your chances of visa approval for US non-immigrant visas and Canada's Express Entry and other pathways.",
+    "do you offer caregiver or work abroad programs": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n🎥 https://vt.tiktok.com/ZSyuUpdN6/\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
+    "do you have student visa programs": "🛂 We offer Non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada.",
+    "how can i book an appointment": "📝 To get started, please complete our Application Form (Full Name, Email, Phone, Age, Address, Visa Type, Available Time). Your information is secure and used only for visa assessment.",
+    "how can i start my application": "📝 To get started, please complete our Application Form (Full Name, Email, Phone, Age, Address, Visa Type, Available Time). Your information is secure and used only for visa assessment.",
+    "what happens after i submit my documents": "📞 Expect a call within 24 hours as soon as we can handle your query.",
+    "can i apply even if im outside metro manila": "📍 Yes, we assist clients nationwide. Business hours: Mon-Sat 9AM-5PM.",
+    "can i walk in without an appointment": "✅ Yes, we accept walk-in clients with or without an appointment, but we highly suggest booking an appointment for faster service.",
+    "do you have available job offers abroad": "🛂 As of now we only offer non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada. For current details, please contact us directly at +63 905-804-4426 or +63 969-251-0672.",
+    "do you have a partner agency abroad": "🏢 No, we are an independent and private company located at our main office in Pasig City, accredited by the Municipality of Pasig.",
+    "are the job placements direct hire or through an agency": "🛂 As of now we only offer non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada. For current details, please contact us directly at +63 905-804-4426 or +63 969-251-0672.",
+    "can families or couples apply together": "👨‍👩‍👧 Yes. Please visit the Application Form to begin booking your appointment. For questions, contact us at +63 905-804-4426 or +63 969-251-0672.",
+    "is the orientation mandatory before applying": "🧭 Yes. We’ll orient you so you’re fully prepared and understand the process.",
+    "can i join the orientation online": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office. We recommend booking an appointment via the Application Form.\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n🎥 https://vt.tiktok.com/ZSyuUpdN6/\n📞 +63 905-804-4426 or +63 969-251-0672.",
+    "what should i bring during the orientation day": "🧾 Bring the Initial Requirements. If you have questions, contact us for confirmation before your visit.",
+    "how can i reschedule my orientation": "📞 Please contact us directly at +63 905-804-4426 or +63 969-251-0672 to reschedule.",
+    "do you have orientations in other branches": "🏢 No, we are only located at our Pasig City office.",
+    "what documents are required to start processing": "🗂️ Provide the Initial Requirements. For a complete and personalized checklist, contact us.",
+    "how do i submit my requirements": "📤 Submit your requirements through the Initial Assessment tab with your personal and contact details.",
+    "how can i verify if my consultant is from state101 travel": "🔐 Please verify using our official details:\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672\n• Business Hours: Mon-Sat 9AM-5PM\n• We are officially registered with the Municipality of Pasig.",
+    "how can i make sure im dealing with an official staff member": "🔐 Please verify using our official details:\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672\n• Business Hours: Mon-Sat 9AM-5PM\n• We are officially registered with the Municipality of Pasig.",
+    "do you have social media": "🌐 Yes. You can find our social media links at the bottom of our website.",
+    "what should i do if i encounter scammers": "⚠️ Please use our official contacts and report suspicious accounts. Official details:\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672\n• Business Hours: Mon-Sat 9AM-5PM\n• We are officially registered with the Municipality of Pasig.",
+    "do you assist with pre-departure orientation": "🧭 Yes, we orient you before departure to help ensure you are fully prepared for your journey.",
     
-    # Fees / Process related
-    "fees related": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "process related": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    
+    # Value proposition
+    "why choose": """🌟 Why choose State101 Travel?
+- Focused expertise: US and Canada visa assistance only, so guidance stays accurate and relevant.
+- Official and registered: Private company accredited by the Municipality of Pasig.
+- Clear, consistent info: Location, hours, and contacts are fixed and verified.
+- Friendly process: We recommend booking an appointment for a smooth visit.
+
+Contacts & Hours:
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ Map: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 Location guide: https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon–Sat, 9:00 AM – 5:00 PM""",
 }
 
 # ========== COLOR THEMES ==========
@@ -155,10 +249,56 @@ class VisaAssistant:
         self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         self.daily_count = 0
         self.last_call = 0
+        # Delay answers slightly to simulate careful reasoning and reduce rapid-fire responses
+        self.thinking_delay = float(st.secrets.get("THINKING_DELAY_MS", 900)) / 1000.0
         # Strict mode ensures canonical info comes only from hardcoded data
         self.strict_mode = bool(st.secrets.get("STRICT_MODE", True))
         # Facts-backed fallback mode: when true, LLM receives canonical facts and must answer using them only
         self.smart_facts_mode = bool(st.secrets.get("SMART_FACTS_MODE", True))
+        # Semantic router settings (RapidFuzz string similarity)
+        self.semantic_enabled = bool(st.secrets.get("SEMANTIC_ROUTER", True))
+        self.semantic_threshold = float(st.secrets.get("SEMANTIC_THRESHOLD", 86))  # 0-100 scale for rapidfuzz
+        self.semantic_entries: List[Tuple[str, str]] = []  # (intent, phrase)
+
+        # Embedding router settings (fastembed; optional)
+        self.embedding_enabled = bool(st.secrets.get("EMBEDDING_ROUTER", True))
+        self.embedding_threshold = float(st.secrets.get("EMBEDDING_THRESHOLD", 0.58))  # cosine 0..1
+        self._embedder = None
+        self.embedding_entries: List[Tuple[str, str]] = []  # (intent, phrase)
+        self.embedding_vectors: List[List[float]] = []  # normalized vectors
+        
+        # --- RAG (Retrieval-Augmented Generation) ---
+        self.rag_enabled = bool(st.secrets.get("RAG_ENABLED", False))
+        self.rag_top_k = int(st.secrets.get("RAG_TOP_K", 4))
+        self.rag_knowledge_dir = st.secrets.get("KNOWLEDGE_DIR", "knowledge")
+        self.rag_chunks: List[Tuple[str, str]] = []  # (source, chunk_text)
+        self.rag_vectors: List[List[float]] = []  # embeddings for chunks
+        
+        # --- Domain relevance gating (to avoid off-topic queries like "where to buy nuggets") ---
+        self.domain_gating_enabled = bool(st.secrets.get("DOMAIN_GATING_ENABLED", True))
+        # If a prompt has no relevant keywords and token length >= this value, mark off-topic
+        self.domain_min_len_for_offtopic = int(st.secrets.get("DOMAIN_MIN_LEN_FOR_OFFTOPIC", 6))
+        # Optional embedding-based relevance: if available, treat as in-domain when similarity >= threshold
+        self.domain_embed_threshold = float(st.secrets.get("DOMAIN_EMBED_THRESHOLD", 0.62))  # cosine 0..1
+
+        # --- LLM-based relevance gating (optional; uses classifier prompt with caching) ---
+        self.llm_relevance_enabled = bool(st.secrets.get("LLM_RELEVANCE_ENABLED", True))
+        self.llm_relevance_model = st.secrets.get("LLM_RELEVANCE_MODEL", "llama-3.3-70b-versatile")
+        # If classification fails (API error), allow query to proceed when True (fail-open)
+        self.llm_relevance_fail_open = bool(st.secrets.get("LLM_RELEVANCE_FAIL_OPEN", True))
+        self._relevance_cache = {}
+        # Optional strict guard for third‑party place queries (e.g., airport, malls)
+        self.third_party_guard_enabled = bool(st.secrets.get("THIRD_PARTY_LOCATION_GUARD_ENABLED", True))
+        self.third_party_place_terms = [
+            "airport", "naia", "terminal", "runway", "jollibee", "mcdo", "mcdonald", "kfc",
+            "burger king", "subway", "7-eleven", "7 eleven", "mall", "sm", "robinsons", "megammall", "mega mall",
+            "market", "supermarket", "groceries", "pharmacy", "drugstore", "hospital", "clinic", "hotel", "resort",
+            "bank", "atm", "police station", "station", "university", "school", "church", "park"
+        ]
+        self._us_reference_markers = [
+            "state101", "state 101", "your office", "your location", "your address", "office address",
+            "where are you", "where is your office", "visit your office", "go to your office"
+        ]
         
         # Define topics that are considered relevant to State101 Travel
         self.relevant_keywords = [
@@ -167,9 +307,9 @@ class VisaAssistant:
             "application", "processing", "state101", "state 101",
             "consultation", "documentation", "embassy", "interview",
             "tourist", "business", "student", "work permit", "immigration",
-            "fee", "cost", "price", "hours", "location", "contact",
+            "fee", "cost", "price", "hours", "location", "contact", "website", "webpage",
             "eligibility", "qualification", "denial", "approval",
-            "urgent", "status", "track", "form", "apply", "b1"
+            "urgent", "status", "track", "form", "apply", "b1", "choose", "benefits", "offerings", "table", "summary", "summarize"
         ]
         
         # Define off-topic keywords that should trigger immediate rejection
@@ -187,19 +327,38 @@ class VisaAssistant:
                 "find you", "tiktok", "tiktok location", "tiktok video", "google map"
             ],
             "hours": ["hours", "opening hours", "business hours", "schedule", "open time", "what time"],
-            "contact": ["contact", "phone", "phone number", "call you", "email", "email address"],
-            "services": ["services", "what services", "services do you offer"],
+            "contact": ["contact", "phone", "phone number", "call you", "email", "email address", "how to contact you", "contact you", "reach you", "how can i contact you"],
+            "website": ["website", "web site", "web page", "webpage", "website page"],
+            "services": [
+                "services", "what services", "services do you offer",
+                "what services does state101 travel offer"
+            ],
             "legit": ["legit", "legitimacy", "is your company legit"],
-            "program details": ["program details", "details of your program", "details of program"],
-            "visa type": ["visa type", "what type of visa", "what type of visa you offer"],
-            "qualifications": ["qualifications", "qualification"],
-            "age limit": ["age", "age limit"],
+            "program details": [
+                "program details", "details of your program", "details of program",
+                "are trainings free", "is orientation free", "installment plans", "hidden charges",
+                "consultation free"
+            ],
+            "visa type": [
+                "visa type", "what type of visa", "what type of visa you offer",
+                "what types of visas do you process", "do you have student visa programs",
+                "o visa", "o-1 visa", "o1 visa", "o visa for us talent"
+            ],
+            "qualifications": ["qualifications", "qualification", "what are the qualifications"],
+            "age limit": ["age", "age limit", "age related"],
             "gender": ["gender", "genders required"],
             "graduates": ["graduates", "undergraduate", "does it accept graduates only"],
-            "requirements": ["requirements", "documents", "needed documents"],
-            "appointment": ["appointment", "book", "schedule appointment"],
-            "status": ["status", "application status"],
-            "price": ["price", "cost", "fee", "how much", "payment", "payment options", "pay"],
+            "requirements": ["requirements", "documents", "needed documents", "prepare", "preparation", "what should i prepare", "what to bring"],
+            "appointment": [
+                "appointment", "book", "schedule appointment", "how can i book an appointment",
+                "how can i start my application"
+            ],
+            "status": ["status", "application status", "how do i know the status"],
+            "price": [
+                "price", "cost", "fee", "how much", "payment", "payment options", "pay",
+                "installment", "hidden charges", "consultation free", "processing fee",
+                "what payment methods do you accept"
+            ],
             "program details": [
                 "program details", "details of your program", "details of program",
                 "fees related", "process related",
@@ -207,16 +366,213 @@ class VisaAssistant:
                 "how does visa application process work", "how does the process work",
                 "how does your process work", "steps", "procedure", "flow", "timeline", "how to apply"
             ],
+            "why choose": [
+                "why choose", "why choose state101", "why should i choose you", "why pick you",
+                "what makes you different", "advantages", "benefits"
+            ],
         }
+        # Build indexes
+        if self.semantic_enabled:
+            self._build_semantic_index()
+        if self.embedding_enabled:
+            self._build_embedding_index()
+        # Build RAG index last so fastembed (if available) can be reused
+        if self.rag_enabled:
+            self._build_rag_index()
+
+    def _build_semantic_index(self):
+        # Build a list of representative phrases for each intent.
+        entries: List[Tuple[str, str]] = []
+        for intent, syns in self.intent_synonyms.items():
+            for s in syns:
+                entries.append((intent, s))
+        # Add the hardcoded keys as phrases as well
+        for key in HARDCODED_RESPONSES.keys():
+            entries.append((key, key))
+        # Deduplicate
+        seen = set()
+        deduped: List[Tuple[str, str]] = []
+        for intent, text in entries:
+            t = text.strip().lower()
+            if t and t not in seen:
+                seen.add(t)
+                deduped.append((intent, text))
+        self.semantic_entries = deduped
+
+    def _import_fastembed(self):
+        # Prefer the top-level import if available
+        try:
+            if _FASTEMBED_TEXTEMBEDDING is not None:
+                return _FASTEMBED_TEXTEMBEDDING
+        except NameError:
+            pass
+        # Fallback: lazy import via importlib
+        try:
+            mod = importlib.import_module("fastembed")
+            TextEmbedding = getattr(mod, "TextEmbedding")
+            return TextEmbedding
+        except Exception:
+            return None
+
+    def _l2_normalize(self, vec: List[float]) -> List[float]:
+        norm = math.sqrt(sum(x * x for x in vec)) or 1.0
+        return [x / norm for x in vec]
+
+    def _build_embedding_index(self):
+        TextEmbedding = self._import_fastembed()
+        if TextEmbedding is None:
+            self.embedding_enabled = False
+            return
+        try:
+            self._embedder = TextEmbedding()
+            # Build phrases similar to semantic index
+            entries: List[Tuple[str, str]] = []
+            for intent, syns in self.intent_synonyms.items():
+                for s in syns:
+                    entries.append((intent, s))
+            for key in HARDCODED_RESPONSES.keys():
+                entries.append((key, key))
+            # Dedup
+            seen = set()
+            deduped: List[Tuple[str, str]] = []
+            for intent, text in entries:
+                t = text.strip().lower()
+                if t and t not in seen:
+                    seen.add(t)
+                    deduped.append((intent, text))
+            self.embedding_entries = deduped
+            texts = [t for _, t in self.embedding_entries]
+            vectors = list(self._embedder.embed(texts))
+            self.embedding_vectors = [self._l2_normalize(list(v)) for v in vectors]
+        except Exception:
+            # Disable if anything fails
+            self.embedding_enabled = False
+
+    # ---------- RAG SUPPORT ----------
+    def _list_knowledge_files(self) -> List[Path]:
+        base = Path(self.rag_knowledge_dir)
+        if not base.exists() or not base.is_dir():
+            return []
+        exts = {".md", ".txt"}  # keep it simple; PDFs can be added later
+        files: List[Path] = []
+        for p in base.rglob("*"):
+            if p.is_file() and p.suffix.lower() in exts:
+                files.append(p)
+        return files
+
+    def _read_text_file(self, p: Path) -> str:
+        try:
+            return p.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            try:
+                return p.read_text(errors="ignore")
+            except Exception:
+                return ""
+
+    def _chunk_text(self, text: str, source: str, chunk_size: int = 900, overlap: int = 150) -> List[Tuple[str, str]]:
+        chunks: List[Tuple[str, str]] = []
+        t = text.strip()
+        if not t:
+            return chunks
+        start = 0
+        n = len(t)
+        while start < n:
+            end = min(n, start + chunk_size)
+            chunk = t[start:end]
+            chunks.append((source, chunk))
+            if end == n:
+                break
+            start = max(end - overlap, start + 1)
+        return chunks
+
+    def _build_rag_index(self):
+        files = self._list_knowledge_files()
+        if not files:
+            self.rag_enabled = False  # nothing to index; disable to save cycles
+            return
+        # Load and chunk
+        chunks: List[Tuple[str, str]] = []
+        for f in files:
+            txt = self._read_text_file(f)
+            chunks.extend(self._chunk_text(txt, source=str(f)))
+        # Dedup tiny/blank chunks
+        cleaned: List[Tuple[str, str]] = []
+        seen = set()
+        for src, ch in chunks:
+            c = ch.strip()
+            if len(c) < 40:
+                continue
+            key = (src, c[:80])
+            if key in seen:
+                continue
+            seen.add(key)
+            cleaned.append((src, c))
+        self.rag_chunks = cleaned
+
+        # Build embeddings if fastembed is available; else leave empty for fuzzy retrieval
+        TextEmbedding = self._import_fastembed()
+        if TextEmbedding is None:
+            self.rag_vectors = []
+            return
+        try:
+            embedder = TextEmbedding()
+            texts = [c for _, c in self.rag_chunks]
+            vecs = list(embedder.embed(texts))
+            self.rag_vectors = [self._l2_normalize(list(v)) for v in vecs]
+        except Exception:
+            self.rag_vectors = []
+
+    def _cosine_sim(self, a: List[float], b: List[float]) -> float:
+        return sum(x*y for x, y in zip(a, b))
+
+    def rag_retrieve(self, prompt: str) -> List[Tuple[str, str]]:
+        """Return top-k (source, chunk) from knowledge base using embeddings when available,
+        otherwise fall back to RapidFuzz token_set_ratio ranking."""
+        if not self.rag_enabled or not self.rag_chunks:
+            return []
+        # Prefer embeddings
+        if self.rag_vectors:
+            TextEmbedding = self._import_fastembed()
+            if TextEmbedding is not None:
+                try:
+                    embedder = TextEmbedding()
+                    q = list(embedder.embed([prompt]))[0]
+                    q = self._l2_normalize(list(q))
+                    scored = []
+                    for i, v in enumerate(self.rag_vectors):
+                        scored.append((self._cosine_sim(q, v), i))
+                    scored.sort(reverse=True)
+                    top = [self.rag_chunks[i] for _, i in scored[: self.rag_top_k]]
+                    return top
+                except Exception:
+                    pass
+        # Fallback to token_set_ratio
+        try:
+            scored = []
+            norm = self._normalize(prompt)
+            for i, (_, ch) in enumerate(self.rag_chunks):
+                score = fuzz.token_set_ratio(norm, self._normalize(ch))
+                scored.append((score, i))
+            scored.sort(reverse=True)
+            top = [self.rag_chunks[i] for _, i in scored[: self.rag_top_k]]
+            return top
+        except Exception:
+            return []
 
     def _normalize(self, text: str) -> str:
         return re.sub(r'[^\w\s]', '', text.lower()).strip()
 
     def match_intent(self, prompt: str) -> str | None:
+        """Match intents using word-boundary regex to avoid substring mistakes
+        (e.g., 'age' matching inside 'page'). Supports multi-word synonyms.
+        """
         norm = self._normalize(prompt)
         for key, synonyms in self.intent_synonyms.items():
             for s in synonyms:
-                if s in norm:
+                s_norm = self._normalize(s)
+                # Build a word-boundary pattern for the entire phrase
+                pattern = r"\b" + re.escape(s_norm) + r"\b"
+                if re.search(pattern, norm):
                     return key
         return None
 
@@ -229,6 +585,7 @@ class VisaAssistant:
             "location": "location",
             "hours": "hours",
             "contact": "urgent",  # contains official phone numbers and email
+            "website": "website",  # dedicated website response
             "services": "services",
             "legit": "legit",
             "program details": "program details",
@@ -245,6 +602,46 @@ class VisaAssistant:
         key = mapping.get(intent)
         if key and key in HARDCODED_RESPONSES:
             return HARDCODED_RESPONSES[key]
+        return None
+
+    def semantic_route(self, prompt: str) -> str | None:
+        """Route using RapidFuzz token_set_ratio across known phrases.
+        Returns canonical response if best score >= threshold.
+        """
+        if not self.semantic_enabled:
+            return None
+        norm_prompt = self._normalize(prompt)
+        best_intent = None
+        best_score = -1.0
+        for intent, phrase in self.semantic_entries:
+            score = fuzz.token_set_ratio(norm_prompt, self._normalize(phrase))
+            if score > best_score:
+                best_score = score
+                best_intent = intent
+        if best_score >= self.semantic_threshold and best_intent:
+            return self.get_canonical_response(best_intent)
+        return None
+
+    def embed_route(self, prompt: str) -> str | None:
+        """Route using embeddings cosine similarity if enabled and available."""
+        if not self.embedding_enabled or not self._embedder or not self.embedding_vectors:
+            return None
+        try:
+            q_vec = list(self._embedder.embed([prompt]))[0]
+            q_vec = self._l2_normalize(list(q_vec))
+            # cosine with normalized vectors equals dot product
+            best_idx = -1
+            best_score = -1.0
+            for i, v in enumerate(self.embedding_vectors):
+                score = sum(a*b for a, b in zip(q_vec, v))
+                if score > best_score:
+                    best_score = score
+                    best_idx = i
+            if best_idx >= 0 and best_score >= self.embedding_threshold:
+                intent = self.embedding_entries[best_idx][0]
+                return self.get_canonical_response(intent)
+        except Exception:
+            return None
         return None
 
     def pack_facts(self) -> dict:
@@ -277,6 +674,7 @@ class VisaAssistant:
             "location_block": location_block,
             "map_url": map_url,
             "tiktok_url": tiktok_url or "",
+            "website_url": HARDCODED_RESPONSES.get("website", ""),
             "hours": HARDCODED_RESPONSES.get("hours", ""),
             "phones": phones,
             "email": email_addr,
@@ -294,11 +692,69 @@ class VisaAssistant:
         }
         return facts
 
+    # ---- MULTI-INTENT FUSION HELPERS ----
+    def _regex_intent_hits(self, prompt: str) -> list[str]:
+        """Return all intents matched by word-boundary regex across synonyms.
+        Unlike match_intent (which returns the first), this returns a list for fusion.
+        """
+        norm = self._normalize(prompt)
+        hits: list[str] = []
+        for key, synonyms in self.intent_synonyms.items():
+            for s in synonyms:
+                s_norm = self._normalize(s)
+                pattern = r"\b" + re.escape(s_norm) + r"\b"
+                if re.search(pattern, norm):
+                    if key not in hits:
+                        hits.append(key)
+                        break  # don't add same intent multiple times
+        return hits
+
+    def _keyword_overlap_hits(self, prompt: str) -> list[str]:
+        """Heuristic: pick top overlapping keyword topics. Returns up to 3 distinct intents."""
+        tokens = set(self._normalize(prompt).split())
+        topic_keywords = {
+            # Avoid generic tokens like 'where' or 'find' to reduce false positives
+            "location": {"address", "map", "directions", "office", "tiktok", "location"},
+            "appointment": {"appointment", "book", "schedule", "set", "meeting", "reserve"},
+            "hours": {"hours", "open", "opening", "schedule", "time", "times"},
+            "contact": {"contact", "phone", "call", "email", "mail", "number"},
+            "requirements": {"requirements", "documents", "docs", "papers", "needed"},
+            "price": {"price", "cost", "fee", "payment", "pay", "rates", "rate", "how", "much"},
+            "status": {"status", "track", "tracking", "update", "reference"},
+            "visa type": {"type", "b1", "b2", "what", "visa", "kind"},
+        }
+        scored: list[tuple[str, int]] = []
+        for key, kws in topic_keywords.items():
+            score = len(tokens & kws)
+            if score > 0:
+                scored.append((key, score))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        # keep those with score >= 2 strongly, else top 1 weak overlap
+        strong = [k for k, s in scored if s >= 2]
+        if strong:
+            return strong[:3]
+        return [k for k, _ in scored[:1]]
+
+    def _fuse_intents(self, intents: list[str]) -> str | None:
+        """Combine canonical answers for up to 3 intents in a user-friendly way."""
+        if not intents:
+            return None
+        merged: list[str] = []
+        for it in intents:
+            ans = self.get_canonical_response(it)
+            if ans and ans not in merged:
+                merged.append(ans)
+        if not merged:
+            return None
+        # Join with a visual spacer; keep emoji formatting from each block
+        return "\n\n".join(merged[:3])
+
     def fuzzy_fact_match(self, prompt: str) -> str | None:
         """Lightweight keyword overlap to map unseen phrasing to an intent."""
         tokens = set(self._normalize(prompt).split())
         topic_keywords = {
-            "location": {"where", "address", "map", "directions", "office", "find", "tiktok", "location"},
+            # Avoid generic tokens like 'where' or 'find' to reduce false positives
+            "location": {"address", "map", "directions", "office", "tiktok", "location"},
             "hours": {"hours", "open", "opening", "schedule", "time", "times"},
             "contact": {"contact", "phone", "call", "email", "mail", "number"},
             "services": {"services", "offer", "provide", "service"},
@@ -308,7 +764,7 @@ class VisaAssistant:
             "gender": {"gender", "male", "female", "women", "men"},
             "graduates": {"graduate", "undergraduate", "degree", "college"},
             "price": {"price", "cost", "fee", "payment", "pay", "rates", "rate", "how", "much"},
-            "requirements": {"requirements", "documents", "docs", "papers", "needed"},
+            "requirements": {"requirements", "documents", "docs", "papers", "needed", "prepare", "preparation", "bring"},
             "appointment": {"appointment", "book", "schedule", "set", "meeting"},
             "status": {"status", "track", "tracking", "update", "reference"},
             "visa type": {"type", "b1", "b2", "what", "visa", "kind"},
@@ -326,27 +782,92 @@ class VisaAssistant:
         return None
 
     def is_relevant_query(self, prompt):
-        """Check if the query is related to State101 Travel services"""
+        """Heuristic domain gate for State101 Travel. Conservative allow-list + optional embedding relevance."""
+        if not self.domain_gating_enabled:
+            return True
+
         normalized_prompt = prompt.lower()
-        
-        # First check for obvious off-topic requests
+
+        # Immediate off-topic triggers
         for keyword in self.offtopic_keywords:
             if keyword in normalized_prompt:
                 return False
-        
-        # Check for greetings (always allow)
+
+        # Short greetings/questions: allow to keep UX smooth
         greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"]
-        if any(greeting in normalized_prompt for greeting in greetings) and len(normalized_prompt.split()) <= 3:
+        tokens = normalized_prompt.split()
+        if any(g in normalized_prompt for g in greetings) and len(tokens) <= 3:
             return True
-        
-        # Check if query contains relevant keywords
+
+        # Keyword-based relevance
         has_relevant_keyword = any(keyword in normalized_prompt for keyword in self.relevant_keywords)
-        
-        # If no relevant keywords found and prompt is substantial (>5 words), likely off-topic
-        if not has_relevant_keyword and len(normalized_prompt.split()) > 5:
+
+        # Optional embedding-based relevance using RAG or intent embeddings
+        try:
+            if not has_relevant_keyword and self._embedder and (self.rag_vectors or self.embedding_vectors):
+                # Build a reference pool: prefer RAG vectors; fallback to intent embedding vectors
+                ref_vectors = self.rag_vectors if self.rag_vectors else self.embedding_vectors
+                q_vec = list(self._embedder.embed([prompt]))[0]
+                q_vec = self._l2_normalize(list(q_vec))
+                best = -1.0
+                for v in ref_vectors:
+                    # cosine on normalized vectors
+                    score = sum(a*b for a, b in zip(q_vec, v))
+                    if score > best:
+                        best = score
+                if best >= self.domain_embed_threshold:
+                    has_relevant_keyword = True
+        except Exception:
+            pass
+
+        # If still no signal and the prompt is fairly long, consider it off-topic
+        if not has_relevant_keyword and len(tokens) >= self.domain_min_len_for_offtopic:
             return False
-            
+
         return True
+
+    def check_query_relevance(self, prompt: str) -> bool:
+        """Use an LLM to decide if a query is relevant to State101 visa services.
+        Returns True when relevant, False when off-topic. Caches results per normalized prompt.
+        """
+        try:
+            cache_key = self._normalize(prompt)
+            if cache_key in self._relevance_cache:
+                return self._relevance_cache[cache_key]
+
+            relevance_system = (
+                "You are a strict query filter for State101 Travel (US/Canada visa assistance). "
+                "Output exactly one token: RELEVANT or OFFTOPIC."
+            )
+            content = (
+                "Decide if the following query is about State101 Travel or US/Canada visa assistance.\n"
+                "Consider the following rules:\n"
+                "- RELEVANT topics: visas (US/Canada tourist/business/student/work), requirements, documents, services, our location/address/map, our hours, our contact, appointments, pricing, eligibility, qualifications, greetings.\n"
+                "- OFFTOPIC topics: food/products (nuggets, chicken), entertainment, coding, math/homework, general knowledge, or any other businesses/places.\n"
+                "- IMPORTANT: Generic place/location queries that refer to third-party places (e.g., airports, malls, restaurants) are OFFTOPIC unless they explicitly reference our office (e.g., 'how do I get from NAIA to your office?').\n\n"
+                f"User query: \"{prompt}\"\n\n"
+                "Answer with exactly one word: RELEVANT or OFFTOPIC"
+            )
+
+            resp = self.client.chat.completions.create(
+                model=self.llm_relevance_model,
+                messages=[
+                    {"role": "system", "content": relevance_system},
+                    {"role": "user", "content": content},
+                ],
+                temperature=0.1,
+                max_tokens=6,
+            )
+            label = (resp.choices[0].message.content or "").strip().upper()
+            is_rel = label.startswith("RELEVANT") and "OFFTOPIC" not in label
+            # Small bounded cache (avoid unbounded growth)
+            if len(self._relevance_cache) > 500:
+                self._relevance_cache.clear()
+            self._relevance_cache[cache_key] = is_rel
+            return is_rel
+        except Exception:
+            # Fail-open (configurable)
+            return True if self.llm_relevance_fail_open else False
 
     @sleep_and_retry
     @limits(calls=10, period=60)
@@ -360,6 +881,105 @@ class VisaAssistant:
         except:
             pass
 
+        # small, consistent thinking delay to discourage rapid-fire outputs
+        try:
+            time.sleep(self.thinking_delay)
+        except Exception:
+            pass
+
+        # --- Early domain relevance gating ---
+        # 1) Optional strict guard for third‑party place queries not referring to us
+        if self.third_party_guard_enabled:
+            text = prompt.lower()
+            mentions_third_party = any(t in text for t in self.third_party_place_terms)
+            refers_to_us = any(m in text for m in self._us_reference_markers)
+            if mentions_third_party and not refers_to_us:
+                return (
+                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
+                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
+                )
+
+        # 2) Prefer LLM classifier when enabled; otherwise use heuristic gate
+        if self.llm_relevance_enabled:
+            if not self.check_query_relevance(prompt):
+                return (
+                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
+                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
+                )
+        else:
+            if not self.is_relevant_query(prompt):
+                return (
+                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
+                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
+                )
+
+        # If the user explicitly asks for a composition (table/summary/why choose/etc.),
+        # go straight to the facts-backed LLM to synthesize the answer in the requested style.
+        def _is_composition_request(p: str) -> Tuple[bool, str | None]:
+            text = p.lower()
+            table_triggers = ["table", "structured table", "tabulate", "grid"]
+            summary_triggers = ["summarize", "summary", "overview"]
+            why_triggers = ["why choose", "benefits", "advantages", "why pick", "why should i choose"]
+            if any(t in text for t in table_triggers):
+                return True, "TABLE"
+            if any(t in text for t in summary_triggers):
+                return True, "SUMMARY"
+            if any(t in text for t in why_triggers):
+                return True, "WHY"
+            return False, None
+
+        comp, comp_mode = _is_composition_request(prompt)
+        if comp:
+            try:
+                enhanced_system_prompt = SYSTEM_PROMPT
+                facts = self.pack_facts() if self.smart_facts_mode else None
+                style_hint = ""
+                if comp_mode == "TABLE":
+                    style_hint = "Format your response as a clean Markdown table summarizing our services, contact information, hours, and location. Use only the FACTS."
+                elif comp_mode == "SUMMARY":
+                    style_hint = "Provide a concise bullet summary using only the FACTS. Include requirements and contact info."
+                elif comp_mode == "WHY":
+                    style_hint = "Explain briefly why to choose State101 using only the FACTS (legitimacy, focus on US/Canada, official contacts/location)."
+                messages = [{"role": "system", "content": enhanced_system_prompt}]
+                if facts:
+                    messages.append({"role": "system", "content": "Use only these FACTS:"})
+                    messages.append({"role": "system", "content": f"FACTS: {facts}"})
+                if style_hint:
+                    messages.append({"role": "system", "content": style_hint})
+                messages.append({"role": "user", "content": prompt})
+
+                response = self.client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=messages,
+                    temperature=0.2,
+                    max_tokens=800,
+                )
+                self.last_call = time.time()
+                self.daily_count += 1
+                return response.choices[0].message.content
+            except Exception:
+                # Fall back to deterministic blocks if LLM call fails
+                pass
+
+        # Multi-intent fusion: if the question clearly asks for 2+ items (e.g., address + appointment)
+        # combine both canonical answers deterministically before single-intent routing.
+        fusion_candidates = []
+        # regex hits (precise phrases)
+        fusion_candidates.extend(self._regex_intent_hits(prompt))
+        # keyword overlaps (broad hints)
+        for k in self._keyword_overlap_hits(prompt):
+            if k not in fusion_candidates:
+                fusion_candidates.append(k)
+        # keep only intents we safely fuse to avoid noise
+        fuse_whitelist = {
+            "location", "appointment", "hours", "contact", "requirements", "price", "status", "visa type"
+        }
+        fusion_list = [i for i in fusion_candidates if i in fuse_whitelist]
+        if len(fusion_list) >= 2:
+            fused = self._fuse_intents(fusion_list)
+            if fused:
+                return fused
+
         # Intent-first, hardcoded responses
         intent = self.match_intent(prompt)
         if intent:
@@ -369,7 +989,14 @@ class VisaAssistant:
             if self.strict_mode:
                 return "📘 I can share our official information only. Please ask about requirements, location, hours, services, or submit the application form."
 
-        # Fuzzy fact match before LLM
+        # RapidFuzz router before embeddings to avoid over-eager semantic matches
+        sem_answer = self.semantic_route(prompt)
+        if sem_answer:
+            return sem_answer
+        # Embedding router after string similarity; threshold kept conservative in secrets
+        emb_answer = self.embed_route(prompt)
+        if emb_answer:
+            return emb_answer
         fuzzy_intent = self.fuzzy_fact_match(prompt)
         if fuzzy_intent:
             canonical = self.get_canonical_response(fuzzy_intent)
@@ -377,19 +1004,6 @@ class VisaAssistant:
                 return canonical
             if self.strict_mode:
                 return "📘 I can share our official information only. Please ask about requirements, location, hours, services, or submit the application form."
-
-        # Check if query is relevant to State101 Travel
-        if not self.is_relevant_query(prompt):
-            return """😊 I'm sorry, but I can only assist with queries related to **State101 Travel** and our visa services for the US and Canada.
-
-I can help you with:
-✈️ Visa application processes and requirements
-📋 Documentation needed for Canadian/American visas
-📞 Booking appointments and consultations
-📍 Our office location and business hours
-💼 B1 visa information and opportunities
-
-**How can I assist you with your visa needs today?**"""
 
         # Check for form request
         if "form" in prompt.lower() or "apply" in prompt.lower():
@@ -417,8 +1031,9 @@ I can help you with:
 
 Never provide code, calculations, or information outside of visa/travel services."""
 
-            # Provide facts-backed instructions when enabled
+            # Provide facts-backed instructions and RAG context when enabled
             facts = self.pack_facts() if self.smart_facts_mode else None
+            rag_chunks = self.rag_retrieve(prompt)
             facts_instructions = """
 You must answer ONLY using the FACTS provided below. If a requested detail isn't explicitly present, do your best to:
 1) Use the closest relevant item from FACTS (e.g., use program_details for process questions, price_note for fees, contact_block for contact info).
@@ -433,12 +1048,17 @@ Never invent, rename, or alter addresses, phone numbers, emails, hours, or servi
                 messages.append({"role": "system", "content": facts_instructions})
                 # Keep facts compact
                 messages.append({"role": "system", "content": f"FACTS: {facts}"})
+            # Add retrieved knowledge chunks as optional supporting context (non-canonical)
+            if rag_chunks:
+                joined = "\n\n".join([f"[{i+1}] ({src})\n{txt}" for i, (src, txt) in enumerate(rag_chunks)])
+                messages.append({"role": "system", "content": "Additional CONTEXT (use if relevant; do not override canonical FACTS for address/phones/hours):"})
+                messages.append({"role": "system", "content": joined})
             messages.append({"role": "user", "content": prompt})
 
             response = self.client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
-                temperature=0.3,
+                temperature=0.2,
                 max_tokens=800
             )
             self.last_call = time.time()
@@ -646,6 +1266,34 @@ def upload_to_drive(form_data, uploaded_files):
 
     return folder_link
 
+# ========== VALIDATION HELPERS ==========
+def _is_valid_email(addr: str) -> Tuple[bool, str | None]:
+    """Validate email format (syntax only, no DNS) returning (ok, error_message)."""
+    try:
+        validate_email(addr, check_deliverability=False)
+        return True, None
+    except EmailNotValidError as e:
+        return False, e.title or str(e)
+
+def _validate_ph_phone(num: str) -> Tuple[bool, str | None]:
+    """Validate Philippine phone number. Accepts 09XXXXXXXXX or +639XXXXXXXXX.
+    Returns (is_valid, e164_or_none)."""
+    if not num:
+        return False, None
+    # Strip obvious formatting characters
+    raw = re.sub(r"[\s()-]", "", num)
+    # If it starts with 09 convert to +639 for parsing consistency
+    if raw.startswith("09") and len(raw) == 11:
+        raw = "+63" + raw[1:]
+    try:
+        parsed = phonenumbers.parse(raw, "PH")
+    except Exception:
+        return False, None
+    if phonenumbers.is_valid_number_for_region(parsed, "PH"):
+        e164 = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+        return True, e164
+    return False, None
+
 # ========== APPLICATION FORM ==========
 def show_application_form():
     with st.form("visa_form"):
@@ -673,25 +1321,56 @@ def show_application_form():
         )
 
         st.markdown("---")
-        st.markdown("#### Upload your Requirements")
+        st.markdown("#### Upload your Requirements (optional)")
         uploads = st.file_uploader(
-            "Upload your Requirements (minimum of 2 files e.g., passport, photo, certificates, Resume, Diploma)",
+            "Upload any available requirements (e.g., passport, photo, certificates, Resume, Diploma)",
             accept_multiple_files=True,
-            type=None,
-            help="Attach at least two supporting documents (e.g., passport, photo, certificates,Resume,Diploma)."
+            type=["pdf", "jpg", "jpeg", "png", "heic", "heif", "doc", "docx", "rtf", "txt"],
+            help="Optional but recommended. Allowed formats: PDF, JPG, JPEG, PNG, HEIC/HEIF, DOC/DOCX, RTF, TXT."
         )
+
+        # State flags for modal flow
+        if "trigger_no_uploads_modal" not in st.session_state:
+            st.session_state.trigger_no_uploads_modal = False
+        if "no_uploads_confirmed" not in st.session_state:
+            st.session_state.no_uploads_confirmed = False
+        if "pending_form_payload" not in st.session_state:
+            st.session_state.pending_form_payload = None
 
         submitted = st.form_submit_button("Submit Application")
         if submitted:
             if not all([full_name, email, phone, address]):
                 st.error("Please fill all required fields (*)")
-            elif not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-                st.error("Please enter a valid email address")
-            elif not re.match(r"^09\d{9}$", phone.replace(" ", "").replace("-", "")):
-                st.error("Please enter a valid Philippine phone number (11 digits, starts with 09)")
-            elif not uploads or len(uploads) < 2:
-                st.error("Please upload at least 2 files under 'Upload your Requirements'.")
             else:
+                # Email validation
+                ok_email, email_err_msg = _is_valid_email(email)
+                if not ok_email:
+                    st.error(f"Please enter a valid email address: {email_err_msg}")
+                    return
+                # Phone validation
+                ok_phone, phone_e164 = _validate_ph_phone(phone)
+                if not ok_phone:
+                    st.error("Please enter a valid Philippine phone number (e.g., 09XXXXXXXXX or +639XXXXXXXXXX)")
+                    return
+                # If no uploads: first attempt triggers modal; subsequent attempt with confirmed flag proceeds
+                if (not uploads or len(uploads) == 0) and not st.session_state.no_uploads_confirmed:
+                    # Preserve the form data so we can reuse after confirmation
+                    st.session_state.pending_form_payload = {
+                        "full_name": full_name,
+                        "email": email,
+                        "phone": phone_e164 or phone,
+                        "age": age,
+                        "address": address,
+                        "visa_type": visa_type,
+                        "preferred_day": day_of_week,
+                        "available_time": available_time,
+                    }
+                    st.session_state.trigger_no_uploads_modal = True
+                    st.info("Please confirm you want to submit without uploading any requirements.")
+                    # Rerun so the modal (outside the form) renders immediately in this cycle
+                    st.rerun()
+                # Normalize stored phone to E.164 format
+                phone = phone_e164 or phone
                 form_payload = {
                     "full_name": full_name,
                     "email": email,
@@ -703,6 +1382,20 @@ def show_application_form():
                     "available_time": available_time,
                 }
 
+                # Enforce allowed file types server-side as a defense-in-depth
+                allowed_exts = {"pdf", "jpg", "jpeg", "png", "heic", "heif", "doc", "docx", "rtf", "txt"}
+                uploaded_files = []
+                skipped_files = []
+                for uf in (uploads or []):
+                    name = getattr(uf, "name", "") or ""
+                    ext = str(Path(name).suffix).lower().lstrip(".")
+                    if ext in allowed_exts:
+                        uploaded_files.append(uf)
+                    else:
+                        skipped_files.append(name or "(unnamed)")
+                if skipped_files:
+                    st.info(f"These files were skipped due to unsupported type: {', '.join(skipped_files)}")
+
                 email_ok = False
                 sheet_ok = False
                 drive_ok = False
@@ -713,7 +1406,7 @@ def show_application_form():
 
                 # Try Google Drive backup (subfolder + files) first to capture link
                 try:
-                    drive_link = upload_to_drive(form_payload, uploads)
+                    drive_link = upload_to_drive(form_payload, uploaded_files)
                     drive_ok = True
                 except Exception as e:
                     drive_ok = False
@@ -721,7 +1414,7 @@ def show_application_form():
 
                 # Try send email (include drive link if available)
                 try:
-                    send_application_email(form_payload, uploads, drive_folder_url=drive_link)
+                    send_application_email(form_payload, uploaded_files, drive_folder_url=drive_link)
                     email_ok = True
                 except Exception as e:
                     email_ok = False
@@ -777,6 +1470,115 @@ def show_application_form():
                         st.info(f"Email error: {email_err}")
                     if not drive_ok and drive_err:
                         st.info(f"Drive error: {drive_err}")
+
+    # Outside the form: handle modal confirmation and final submission without uploads
+    # If confirmation granted and we have a pending payload, finalize submission without uploads FIRST
+    if st.session_state.get("no_uploads_confirmed") and st.session_state.get("pending_form_payload"):
+        form_payload = st.session_state.pending_form_payload
+        # Clear flags to avoid duplicate submissions on rerun
+        st.session_state.no_uploads_confirmed = False
+        st.session_state.pending_form_payload = None
+        st.session_state.trigger_no_uploads_modal = False
+
+        email_ok = False
+        sheet_ok = False
+        drive_ok = False
+        drive_link = None
+        email_err = None
+        sheet_err = None
+        drive_err = None
+        uploaded_files = []  # intentionally empty
+
+        try:
+            drive_link = upload_to_drive(form_payload, uploaded_files)
+            drive_ok = True
+        except Exception as e:
+            drive_ok = False
+            drive_err = str(e)
+        try:
+            send_application_email(form_payload, uploaded_files, drive_folder_url=drive_link)
+            email_ok = True
+        except Exception as e:
+            email_ok = False
+            email_err = str(e)
+
+        sheet_row = [
+            form_payload["full_name"],
+            form_payload["email"],
+            form_payload["phone"],
+            str(form_payload["age"]),
+            form_payload["address"],
+            form_payload["visa_type"],
+            form_payload.get("preferred_day", ""),
+            form_payload["available_time"],
+            time.strftime("%Y-%m-%d %H:%M"),
+            drive_link or "",
+        ]
+        try:
+            sheet_ok = save_to_sheet(sheet_row)
+        except Exception as e:
+            sheet_ok = False
+            sheet_err = str(e)
+
+        if email_ok or sheet_ok or drive_ok:
+            st.success("✅ Application submitted without uploads. You can send documents later.")
+        else:
+            st.error("❌ We couldn't submit your application due to a temporary issue. Please try again or contact us directly.")
+
+        debug = bool(st.secrets.get("DEBUG_SUBMISSION", False))
+        if debug and (email_err or drive_err or sheet_err):
+            with st.expander("Diagnostics (for developers)"):
+                st.write({
+                    "drive_ok": drive_ok,
+                    "drive_err": drive_err,
+                    "email_ok": email_ok,
+                    "email_err": email_err,
+                    "sheet_ok": sheet_ok,
+                    "sheet_err": sheet_err,
+                })
+        if debug:
+            if not email_ok and email_err:
+                st.info(f"Email error: {email_err}")
+            if not drive_ok and drive_err:
+                st.info(f"Drive error: {drive_err}")
+
+    # Otherwise, if a modal is requested, open it or show themed fallback prompt
+    elif st.session_state.get("trigger_no_uploads_modal"):
+        # If dialog feature exists, open it; else provide inline fallback prompt with buttons
+        if _DIALOG_DECORATOR:
+            _no_uploads_modal()
+        else:
+            # Theme-aware inline fallback matching chatbot UI
+            theme_name = st.session_state.get("theme", "White")
+            theme = COLOR_THEMES.get(theme_name, COLOR_THEMES["White"])
+            accent = theme.get("accent", "#DC143C")
+            secondary = theme.get("secondary", "#F5F5F5")
+            text_color = theme.get("text", "#000000")
+
+            st.markdown(
+                f"""
+                <div style="padding:10px 12px; background:{secondary}; color:{text_color};
+                            border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
+                    <div style=\"color:#b00020; font-weight:700;\">Note: this can help us improve efficiency</div>
+                </div>
+                <div style="margin:6px 0 12px 0; color:{text_color}; font-weight:600;">
+                    Are you sure you don't want to upload any requirements yet?
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Yes, submit without uploads", key="fallback_yes_submit", use_container_width=True):
+                    st.session_state.no_uploads_confirmed = True
+                    st.session_state.trigger_no_uploads_modal = False
+                    st.rerun()
+            with c2:
+                if st.button("No, I'll upload files", key="fallback_no_cancel", use_container_width=True):
+                    st.session_state.no_uploads_confirmed = False
+                    st.session_state.trigger_no_uploads_modal = False
+                    st.session_state.pending_form_payload = None
+                    st.rerun()
 
 # ========== REQUIREMENTS DISPLAY ==========
 def show_requirements():
