@@ -1323,7 +1323,7 @@ def show_application_form():
         st.markdown("---")
         st.markdown("#### Upload your Requirements (optional)")
         uploads = st.file_uploader(
-            "Upload any available requirements (e.g., passport, photo, certificates, Resume, Diploma)",
+            "Upload any available requirements (e.g., passport, certificates, Resume, Diploma)",
             accept_multiple_files=True,
             type=["pdf", "jpg", "jpeg", "png", "heic", "heif", "doc", "docx", "rtf", "txt"],
             help="Optional but recommended. Allowed formats: PDF, JPG, JPEG, PNG, HEIC/HEIF, DOC/DOCX, RTF, TXT."
