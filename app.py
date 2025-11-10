@@ -895,22 +895,22 @@ class VisaAssistant:
             refers_to_us = any(m in text for m in self._us_reference_markers)
             if mentions_third_party and not refers_to_us:
                 return (
-                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
-                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
+                    "😊 I can help with State101 Travel's US/Canada visa assistance inquiries only. "
+                    "Please ask about visa requirements, appointments, contact info, or our location."
                 )
 
         # 2) Prefer LLM classifier when enabled; otherwise use heuristic gate
         if self.llm_relevance_enabled:
             if not self.check_query_relevance(prompt):
                 return (
-                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
-                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
+                    "😊 I can help with State101 Travel's US/Canada visa assistance inquiries only. "
+                    "Please ask about visa requirements, appointments, contact info, or our location."
                 )
         else:
             if not self.is_relevant_query(prompt):
                 return (
-                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
-                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
+                    "😊 I can help with State101 Travel's US/Canada visa assistance inquiries only. "
+                    "Please ask about visa requirements, appointments, contact info, or our location."
                 )
 
         # If the user explicitly asks for a composition (table/summary/why choose/etc.),
@@ -1273,7 +1273,8 @@ def _is_valid_email(addr: str) -> Tuple[bool, str | None]:
         validate_email(addr, check_deliverability=False)
         return True, None
     except EmailNotValidError as e:
-        return False, e.title or str(e)
+        # Some versions of email-validator don't expose 'title'; prefer str(e) for compatibility
+        return False, str(e)
 
 def _validate_ph_phone(num: str) -> Tuple[bool, str | None]:
     """Validate Philippine phone number. Accepts 09XXXXXXXXX or +639XXXXXXXXX.
@@ -1337,7 +1338,7 @@ def show_application_form():
         if "pending_form_payload" not in st.session_state:
             st.session_state.pending_form_payload = None
 
-        submitted = st.form_submit_button("Submit Application")
+        submitted = st.form_submit_button("Submit Application", use_container_width=True)
         if submitted:
             if not all([full_name, email, phone, address]):
                 st.error("Please fill all required fields (*)")
@@ -1638,6 +1639,13 @@ def apply_theme(theme_name):
     .stButton>button:hover {{
         filter: brightness(1.05);
         box-shadow: 0 0 10px {theme['accent']};
+    }}
+    /* Emphasize primary submit button inside forms */
+    .stForm .stButton:first-of-type > button {{
+        box-shadow: 0 0 0 2px {theme['accent']} inset, 0 0 14px {theme['accent']};
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 1.05rem;
     }}
 
     /* Outlined / minimal buttons (keeps existing UI consistent) */
@@ -2009,7 +2017,6 @@ these terms.
 
 if __name__ == "__main__":
     main()
-
 
 
 
