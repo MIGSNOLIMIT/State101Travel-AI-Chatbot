@@ -1694,7 +1694,7 @@ def apply_theme(theme_name):
     }}
     /* Force the form submit button to black background with red text (no hover needed) */
     .stForm .stButton > button {{
-        background-color: #000000 !important;  /* black */
+        background-color: {theme['secondary']} !important;
         color: {theme['accent']} !important;   /* red text from theme accent */
         border: 2px solid {theme['accent']} !important;
         box-shadow: none !important;
