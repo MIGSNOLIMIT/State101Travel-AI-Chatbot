@@ -1692,19 +1692,18 @@ def apply_theme(theme_name):
         filter: brightness(1.05);
         box-shadow: 0 0 10px {theme['accent']};
     }}
-    /* Force the form submit button to black background with BLUE text (explicit request) */
-    .stForm .stButton > button {{
-        background-color: #000000 !important; /* black */
-        color: #1E90FF !important;            /* blue text */
-        border: 2px solid {theme['accent']} !important; /* keep existing red border */
-        box-shadow: none !important;
-        text-transform: none !important;
-        letter-spacing: normal !important;
+    /* Force the form submit button and its inner elements to use blue text regardless of nested styling */
+    /* More aggressive selector set to force blue text for submit button including nested spans */
+    .stForm .stButton > button,
+    .stForm .stButton > button *,
+    .stForm .stButton>button span,
+    .stForm .stButton>button div {{
+        color: #1E90FF !important;
+        -webkit-text-fill-color: #1E90FF !important;
     }}
-    .stForm .stButton > button:hover {{
-        filter: none !important;
-        box-shadow: none !important;
-        opacity: 0.95; /* slight feedback without glow */
+    .stForm .stButton > button {{
+        background-color: #000000 !important;
+        border: 2px solid {theme['accent']} !important;
     }}
 
     /* Outlined / minimal buttons (keeps existing UI consistent) */
