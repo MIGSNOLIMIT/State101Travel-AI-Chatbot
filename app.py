@@ -43,15 +43,15 @@ if _DIALOG_DECORATOR:
         text_color = theme.get("text", "#000000")
 
         st.markdown(
-            f"""
-            <div style="padding:10px 12px; background:{secondary}; color:{text_color};
-                        border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
-                <div style="color:#b00020; font-weight:700;">Note: this can help us improve efficiency</div>
-            </div>
-            <div style="margin:6px 0 12px 0; color:{accent}; font-weight:600;">
-                Are you sure you don't want to upload any requirements yet?
-            </div>
-            """,
+                f"""
+                <div style="padding:10px 12px; background:{secondary}; color:{text_color};
+                            border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
+                    <div style="color:#b00020; font-weight:700;">Note: this can help us improve efficiency</div>
+                </div>
+                <div style="margin:6px 0 12px 0; color:{accent}; font-weight:600;">
+                    Are you sure you don't want to upload any requirements yet?
+                </div>
+                """,
             unsafe_allow_html=True,
         )
         col1, col2 = st.columns(2)
@@ -1692,11 +1692,11 @@ def apply_theme(theme_name):
         filter: brightness(1.05);
         box-shadow: 0 0 10px {theme['accent']};
     }}
-    /* Force the form submit button to black background with red text (no hover needed) */
+    /* Force the form submit button to black background with BLUE text (explicit request) */
     .stForm .stButton > button {{
-        background-color: {theme['secondary']} !important;
-        color: {theme['accent']} !important;   /* red text from theme accent */
-        border: 2px solid {theme['accent']} !important;
+        background-color: #000000 !important; /* black */
+        color: #1E90FF !important;            /* blue text */
+        border: 2px solid {theme['accent']} !important; /* keep existing red border */
         box-shadow: none !important;
         text-transform: none !important;
         letter-spacing: normal !important;
