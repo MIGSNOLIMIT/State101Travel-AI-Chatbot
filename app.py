@@ -48,7 +48,7 @@ if _DIALOG_DECORATOR:
                         border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
                 <div style="color:#b00020; font-weight:700;">Note: this can help us improve efficiency</div>
             </div>
-            <div style="margin:6px 0 12px 0; color:{text_color}; font-weight:600;">
+            <div style="margin:6px 0 12px 0; color:{accent}; font-weight:600;">
                 Are you sure you don't want to upload any requirements yet?
             </div>
             """,
@@ -1271,6 +1271,58 @@ def _is_valid_email(addr: str) -> Tuple[bool, str | None]:
     """Validate email format (syntax only, no DNS) returning (ok, error_message)."""
     try:
         validate_email(addr, check_deliverability=False)
+        # Extra layer: catch common domain typos (e.g., gmil.com -> gmail.com)
+        try:
+            local, domain = addr.rsplit("@", 1)
+        except ValueError:
+            # No domain part; let the main validator's result stand
+            return True, None
+        domain = domain.lower().strip()
+
+        # Allow-list of common consumer email domains
+        common_domains = {
+            "gmail.com",
+            "googlemail.com",  # legacy but valid
+            "yahoo.com",
+            "ymail.com",
+            "outlook.com",
+            "hotmail.com",
+            "live.com",
+            "msn.com",
+            "aol.com",
+            "icloud.com",
+            "me.com",
+            "proton.me",
+            "protonmail.com",
+        }
+
+        if domain in common_domains:
+            return True, None
+
+        # If not a known consumer domain, check if it's a near-miss of one; if so, reject with suggestion.
+        # This prevents false blocks on corporate domains (e.g., user@company.co).
+        def _similarity(a: str, b: str) -> float:
+            try:
+                # Prefer RapidFuzz if available (imported at top)
+                from rapidfuzz import fuzz as _rf
+                return _rf.ratio(a, b) / 100.0
+            except Exception:
+                # Fallback to difflib
+                import difflib
+                return difflib.SequenceMatcher(None, a, b).ratio()
+
+        best_match = None
+        best_score = 0.0
+        for cand in common_domains:
+            score = _similarity(domain, cand)
+            if score > best_score:
+                best_score = score
+                best_match = cand
+
+        # Treat as typo when very close to a popular domain but not equal
+        if best_match and domain != best_match and best_score >= 0.90:
+            return False, f"Did you mean {best_match}?"
+
         return True, None
     except EmailNotValidError as e:
         # Some versions of email-validator don't expose 'title'; prefer str(e) for compatibility
@@ -1562,7 +1614,7 @@ def show_application_form():
                             border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
                     <div style=\"color:#b00020; font-weight:700;\">Note: this can help us improve efficiency</div>
                 </div>
-                <div style="margin:6px 0 12px 0; color:{text_color}; font-weight:600;">
+                <div style="margin:6px 0 12px 0; color:{accent}; font-weight:600;">
                     Are you sure you don't want to upload any requirements yet?
                 </div>
                 """,
@@ -1640,12 +1692,19 @@ def apply_theme(theme_name):
         filter: brightness(1.05);
         box-shadow: 0 0 10px {theme['accent']};
     }}
-    /* Emphasize primary submit button inside forms */
-    .stForm .stButton:first-of-type > button {{
-        box-shadow: 0 0 0 2px {theme['accent']} inset, 0 0 14px {theme['accent']};
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-size: 1.05rem;
+    /* Force the form submit button to black background with red text (no hover needed) */
+    .stForm .stButton > button {{
+        background-color: #000000 !important;  /* black */
+        color: {theme['accent']} !important;   /* red text from theme accent */
+        border: 2px solid {theme['accent']} !important;
+        box-shadow: none !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+    }}
+    .stForm .stButton > button:hover {{
+        filter: none !important;
+        box-shadow: none !important;
+        opacity: 0.95; /* slight feedback without glow */
     }}
 
     /* Outlined / minimal buttons (keeps existing UI consistent) */
