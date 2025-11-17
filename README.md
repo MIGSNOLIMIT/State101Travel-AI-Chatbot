@@ -48,6 +48,34 @@ Feature flags (in secrets.toml):
 
 ---
 
+## CMS Knowledgebase Sync (Website → Chatbot)
+
+Non‑technical editors update knowledge in the website CMS (admin). The chatbot can mirror that content and use it as Retrieval‑Augmented context.
+
+What it does:
+- Fetches `GET /api/knowledgebase` from your website (read‑only).
+- Writes mirrors into `knowledge/kb_*.md` with frontmatter.
+- Rebuilds RAG index so new content is considered in answers.
+- Safe fallback: if remote is empty/unreachable, the chatbot keeps the last local snapshot and all hardcoded replies still work.
+
+Enable and configure:
+1) In `.streamlit/secrets.toml`, add:
+```toml
+# Website KB endpoint (public read)
+KB_API_URL = "https://your-site.com/api/knowledgebase"
+
+# Turn on RAG to use mirrored files
+RAG_ENABLED = true
+```
+2) In the app, open the Chat tab and click "Refresh Knowledgebase" to pull the latest articles. The header shows last sync time, item count, and changed files.
+
+Notes:
+- The chatbot prioritizes canonical hardcoded facts for address/phones/hours unless you later add a dedicated `/api/facts` endpoint; KB articles are for long‑form FAQs and guides, not for overriding protected facts.
+- Remote empty → a yellow warning appears; previous local markdown files remain in place.
+- Changed‑only writes: a small index file speeds up future syncs and avoids unnecessary rewrites.
+
+---
+
 ## Requirements
 
 - Windows 10/11 with PowerShell
