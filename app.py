@@ -1078,7 +1078,7 @@ Never invent, rename, or alter addresses, phone numbers, emails, hours, or servi
             return response_text
             
         except Exception as e:
-            return "⚠️ System busy. Please contact us directly:\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com"
+            return "😊 I'm sorry, but I can only assist with queries related to **State101 Travel** and our visa services."
 # ========== GOOGLE SHEETS INTEGRATION ==========
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
 def save_to_sheet(data):
@@ -1973,39 +1973,21 @@ these terms.
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    tab1, tab2, tab3 = st.tabs(["Chat Assistant", "Application Form", "Requirements"])
-
-    with tab1:
-        # Create a container for chat messages
-        chat_container = st.container()
-        
-        # Display chat messages
-        with chat_container:
-            for msg in st.session_state.messages:
-                with st.chat_message(msg["role"]):
-                    st.markdown(msg["content"])
-        
-        # Add empty space to push content up
-        st.markdown("<br>" * 2, unsafe_allow_html=True)
-
-        # Input box at the bottom (only in tab1)
-        user_prompt = st.chat_input("Ask about US and Canada visas...")
-        if user_prompt:
-            # Show user's message
-            st.session_state.messages.append({"role": "user", "content": user_prompt})
-            
-            # Get assistant response
-            bot_response = st.session_state.chatbot.generate(user_prompt)
-            st.session_state.messages.append({"role": "assistant", "content": bot_response})
-            
-            # Rerun to refresh and show new messages
-            st.rerun()
-
-    with tab2:
-        show_application_form()
-
-    with tab3:
-        show_requirements()
+    # Single Chat Assistant tab only
+    st.header("Chat Assistant")
+    st.info("To apply, please visit our official website: [https://state101-travel-website.vercel.app/services](https://state101-travel-website.vercel.app/services)")
+    chat_container = st.container()
+    with chat_container:
+        for msg in st.session_state.messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+    st.markdown("<br>" * 2, unsafe_allow_html=True)
+    user_prompt = st.chat_input("Ask about US and Canada visas...")
+    if user_prompt:
+        st.session_state.messages.append({"role": "user", "content": user_prompt})
+        bot_response = st.session_state.chatbot.generate(user_prompt)
+        st.session_state.messages.append({"role": "assistant", "content": bot_response})
+        st.rerun()
 
 if __name__ == "__main__":
     main()
