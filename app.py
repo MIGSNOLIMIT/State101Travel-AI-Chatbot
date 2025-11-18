@@ -1,19 +1,28 @@
 import streamlit as st
 import time
 import re
+import gspread
 from groq import Groq
+from tenacity import retry, stop_after_attempt, wait_exponential
+from google.oauth2.service_account import Credentials
 from ratelimit import limits, sleep_and_retry
 from pathlib import Path
 from langdetect import detect
 from deep_translator import GoogleTranslator
+import smtplib
+from email.message import EmailMessage
+import mimetypes
+import ssl
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+import io
+from datetime import datetime
 from typing import List, Tuple
 from rapidfuzz import fuzz
 import importlib
 import math
-import requests
-import json
-import hashlib
-import textwrap
+from email_validator import validate_email, EmailNotValidError
+import phonenumbers
 try:
     # Optional top-level import so it's visible in the file header when installed
     # Falls back gracefully if the package isn't present
@@ -21,17 +30,55 @@ try:
 except Exception:
     _FASTEMBED_TEXTEMBEDDING = None
 
+# ====== DIALOG SUPPORT (modal fallback if available) ======
+_DIALOG_DECORATOR = getattr(st, "dialog", None) or getattr(st, "experimental_dialog", None)
+if _DIALOG_DECORATOR:
+    @_DIALOG_DECORATOR("Submit without uploads?")
+    def _no_uploads_modal():
+        # Theme-aware styling to fit current chatbot UI
+        theme_name = st.session_state.get("theme", "White")
+        theme = COLOR_THEMES.get(theme_name, COLOR_THEMES["White"])
+        accent = theme.get("accent", "#DC143C")
+        secondary = theme.get("secondary", "#F5F5F5")
+        text_color = theme.get("text", "#000000")
+
+        st.markdown(
+                f"""
+                <div style="padding:10px 12px; background:{secondary}; color:{text_color};
+                            border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
+                    <div style="color:#b00020; font-weight:700;">Note: this can help us improve efficiency</div>
+                </div>
+                <div style="margin:6px 0 12px 0; color:{accent}; font-weight:600;">
+                    Are you sure you don't want to upload any requirements yet?
+                </div>
+                """,
+            unsafe_allow_html=True,
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Yes, submit without uploads", key="modal_yes_submit", use_container_width=True):
+                st.session_state["no_uploads_confirmed"] = True
+                st.session_state["trigger_no_uploads_modal"] = False
+                st.rerun()
+        with col2:
+            if st.button("No, I'll upload files", key="modal_no_cancel", use_container_width=True):
+                st.session_state["no_uploads_confirmed"] = False
+                st.session_state["trigger_no_uploads_modal"] = False
+                st.session_state["pending_form_payload"] = None
+                # Close dialog on rerun
+                st.rerun()
+
 # ========== SYSTEM PROMPT ==========
 SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for State101Travel specializing in US/Canada visa assistance. Your role is to:
 
 1. **Information Provider**:
-   - Clearly explain Canadian Visa and American visa processes
-   - Provide requirements and services information when asked
+   - Clearly explain Canadian Visa  and American visa processes
+   - Provide hardcoded requirements when asked
    - Share business hours (Mon-Sat 9AM-5PM), location, and contact details
 
-2. **Application & Requirements**:
-   - Direct users to the website for the application form and requirements: https://state101-travel-website.vercel.app/services
-   - The website has all the detailed requirements and application forms
+2. **Form Collector**:
+   - Direct users to complete the application form with these fields:
+     *Full Name, Email, Phone, Age, Address, Visa Type (Canadian/American), Available Time*
 
 3. **Response Rules**:
    - For requirements/questions in HARDCODED_RESPONSES, use ONLY those exact answers
@@ -43,7 +90,6 @@ SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for S
 
 4. **Key Talking Points**:
    - Always emphasize: "We recommend an appointment before walking in."
-   - Direct users to https://state101-travel-website.vercel.app/services for applications and requirements
 
 5. **Style Guide**:
    - Use bullet points for requirements
@@ -63,7 +109,7 @@ google map link: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8 ."
     - For questions that are "fees related" or "process related", reply exactly: "All the details about our program will be discussed during the initial briefing and assessment at our office".
     - When providing the office location, include BOTH the Google Maps link and the TikTok location guide link from the hardcoded responses.
     - Never invent or rename branches/locations. Use exactly the strings in the hardcoded responses.
-    - If requested information is not present in HARDCODED_RESPONSES, reply that the information isn't available and direct the user to contact via the official phones/email or visit https://state101-travel-website.vercel.app/services.
+    - If requested information is not present in HARDCODED_RESPONSES, reply that the information isn't available and direct the user to contact via the official phones/email or submit the Application Form.
 """
 
 # ========== HARDCODED RESPONSES ==========
@@ -88,7 +134,6 @@ HARDCODED_RESPONSES = {
     "complex": "🔍 For case-specific advice, please contact our specialists directly:\n📞 0961 084 2538\n📧 state101ortigasbranch@gmail.com",
     "status": "🔄 For application status updates, please email us with your reference number or contact us at +63 905-804-4426 / +63 969-251-0672.",
     "urgent": "⏰ For urgent concerns, call us at +63 905-804-4426 or +63 969-251-0672 during business hours.",
-    "contact": "📞 You can contact us directly: +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com",
     
     # Pricing and payments
     "how much": "💰 All the details about our program will be discussed during the initial briefing and assessment at our office.",
@@ -137,22 +182,22 @@ HARDCODED_RESPONSES = {
     "is there a guarantee of visa approval": "✅ We are here to guide you from start to finish and help increase your chances of visa approval for US non-immigrant visas and Canada's Express Entry and other pathways.",
     "do you offer caregiver or work abroad programs": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n🎥 https://vt.tiktok.com/ZSyuUpdN6/\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
     "do you have student visa programs": "🛂 We offer Non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada.",
-    "how can i book an appointment": "📝 To get started, please visit our website to complete the application form: https://state101-travel-website.vercel.app/services\n\nYour information is secure and used only for visa assessment.",
-    "how can i start my application": "📝 To get started, please visit our website to complete the application form: https://state101-travel-website.vercel.app/services\n\nYour information is secure and used only for visa assessment.",
+    "how can i book an appointment": "📝 To get started, please complete our Application Form (Full Name, Email, Phone, Age, Address, Visa Type, Available Time). Your information is secure and used only for visa assessment.",
+    "how can i start my application": "📝 To get started, please complete our Application Form (Full Name, Email, Phone, Age, Address, Visa Type, Available Time). Your information is secure and used only for visa assessment.",
     "what happens after i submit my documents": "📞 Expect a call within 24 hours as soon as we can handle your query.",
     "can i apply even if im outside metro manila": "📍 Yes, we assist clients nationwide. Business hours: Mon-Sat 9AM-5PM.",
     "can i walk in without an appointment": "✅ Yes, we accept walk-in clients with or without an appointment, but we highly suggest booking an appointment for faster service.",
     "do you have available job offers abroad": "🛂 As of now we only offer non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada. For current details, please contact us directly at +63 905-804-4426 or +63 969-251-0672.",
     "do you have a partner agency abroad": "🏢 No, we are an independent and private company located at our main office in Pasig City, accredited by the Municipality of Pasig.",
     "are the job placements direct hire or through an agency": "🛂 As of now we only offer non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada. For current details, please contact us directly at +63 905-804-4426 or +63 969-251-0672.",
-    "can families or couples apply together": "👨‍👩‍👧 Yes. Please visit https://state101-travel-website.vercel.app/services to begin your application. For questions, contact us at +63 905-804-4426 or +63 969-251-0672.",
+    "can families or couples apply together": "👨‍👩‍👧 Yes. Please visit the Application Form to begin booking your appointment. For questions, contact us at +63 905-804-4426 or +63 969-251-0672.",
     "is the orientation mandatory before applying": "🧭 Yes. We’ll orient you so you’re fully prepared and understand the process.",
-    "can i join the orientation online": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office. We recommend booking an appointment via our website: https://state101-travel-website.vercel.app/services\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n🎥 https://vt.tiktok.com/ZSyuUpdN6/\n📞 +63 905-804-4426 or +63 969-251-0672.",
+    "can i join the orientation online": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office. We recommend booking an appointment via the Application Form.\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n🎥 https://vt.tiktok.com/ZSyuUpdN6/\n📞 +63 905-804-4426 or +63 969-251-0672.",
     "what should i bring during the orientation day": "🧾 Bring the Initial Requirements. If you have questions, contact us for confirmation before your visit.",
     "how can i reschedule my orientation": "📞 Please contact us directly at +63 905-804-4426 or +63 969-251-0672 to reschedule.",
     "do you have orientations in other branches": "🏢 No, we are only located at our Pasig City office.",
     "what documents are required to start processing": "🗂️ Provide the Initial Requirements. For a complete and personalized checklist, contact us.",
-    "how do i submit my requirements": "📤 Submit your requirements through our website: https://state101-travel-website.vercel.app/services\n\nYou can view all requirements and submit your application there.",
+    "how do i submit my requirements": "📤 Submit your requirements through the Initial Assessment tab with your personal and contact details.",
     "how can i verify if my consultant is from state101 travel": "🔐 Please verify using our official details:\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672\n• Business Hours: Mon-Sat 9AM-5PM\n• We are officially registered with the Municipality of Pasig.",
     "how can i make sure im dealing with an official staff member": "🔐 Please verify using our official details:\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672\n• Business Hours: Mon-Sat 9AM-5PM\n• We are officially registered with the Municipality of Pasig.",
     "do you have social media": "🌐 Yes. You can find our social media links at the bottom of our website.",
@@ -212,7 +257,7 @@ class VisaAssistant:
         self.smart_facts_mode = bool(st.secrets.get("SMART_FACTS_MODE", True))
         # Semantic router settings (RapidFuzz string similarity)
         self.semantic_enabled = bool(st.secrets.get("SEMANTIC_ROUTER", True))
-        self.semantic_threshold = float(st.secrets.get("SEMANTIC_THRESHOLD", 80))  # Lowered from 86 to 80 for better typo tolerance
+        self.semantic_threshold = float(st.secrets.get("SEMANTIC_THRESHOLD", 86))  # 0-100 scale for rapidfuzz
         self.semantic_entries: List[Tuple[str, str]] = []  # (intent, phrase)
 
         # Embedding router settings (fastembed; optional)
@@ -235,8 +280,6 @@ class VisaAssistant:
         self.domain_min_len_for_offtopic = int(st.secrets.get("DOMAIN_MIN_LEN_FOR_OFFTOPIC", 6))
         # Optional embedding-based relevance: if available, treat as in-domain when similarity >= threshold
         self.domain_embed_threshold = float(st.secrets.get("DOMAIN_EMBED_THRESHOLD", 0.62))  # cosine 0..1
-        # Knowledgebase overrides (populated in pack_facts)
-        self.kb_overrides: dict[str, str] = {}
 
         # --- LLM-based relevance gating (optional; uses classifier prompt with caching) ---
         self.llm_relevance_enabled = bool(st.secrets.get("LLM_RELEVANCE_ENABLED", True))
@@ -266,77 +309,14 @@ class VisaAssistant:
             "tourist", "business", "student", "work permit", "immigration",
             "fee", "cost", "price", "hours", "location", "contact", "website", "webpage",
             "eligibility", "qualification", "denial", "approval",
-            "urgent", "status", "track", "form", "apply", "b1", "choose", "benefits", "offerings", "table", "summary", "summarize",
-            "reach", "call", "email", "phone", "number", "how to", "where", "when", "get", "find",
-            # Legitimacy/trust related (for translated queries like "is this true?", "real?")
-            "legit", "legitimate", "real", "true", "trust", "trustworthy", "scam", "fake", "registered", "official"
+            "urgent", "status", "track", "form", "apply", "b1", "choose", "benefits", "offerings", "table", "summary", "summarize"
         ]
         
         # Define off-topic keywords that should trigger immediate rejection
         self.offtopic_keywords = [
-            # Programming & Tech
-            "calculator", "code", "program", "programming", "python", "javascript", "java",
-            "html", "css", "coding", "developer", "software", "debug", "algorithm",
-            "function", "variable", "loop", "array", "database", "sql", "api",
-            
-            # Food & Restaurants (NOT visa related)
-            "nuggets", "chicken", "burger", "pizza", "food", "restaurant", "menu",
-            "jollibee", "mcdo", "mcdonald", "kfc", "fastfood", "fast food",
-            "recipe", "cook", "cooking", "bake", "kitchen", "meal", "lunch", "dinner",
-            "breakfast", "starbucks", "shakeys", "max", "chowking", "greenwich",
-            "potato corner", "army navy", "yellow cab", "papa johns", "pizza hut",
-            "burger king", "wendys", "subway", "taco bell", "chipotle",
-            
-            # Entertainment
-            "game", "gaming", "video game", "xbox", "playstation", "nintendo",
-            "movie", "film", "cinema", "netflix", "series", "anime", "tv show",
-            "song", "music", "spotify", "concert", "artist", "album", "singer",
-            "youtube", "tiktok video", "vlog", "streamer", "twitch",
-            
-            # Academic (non-visa)
-            "math", "solve", "equation", "homework", "essay", "write a story",
-            "assignment", "thesis", "research", "study", "exam", "test", "quiz",
-            "algebra", "calculus", "geometry", "physics", "chemistry", "biology",
-            
-            # Weather & Nature
-            "weather", "forecast", "rain", "sunny", "temperature", "climate",
-            "typhoon", "storm", "earthquake", "volcano",
-            
-            # Sports & Fitness
-            "sports", "basketball", "football", "soccer", "volleyball", "boxing",
-            "manny pacquiao", "nba", "pba", "ufc", "gym", "workout", "exercise",
-            
-            # Finance & Investment (non-visa)
-            "stock", "crypto", "bitcoin", "ethereum", "trading", "investment",
-            "forex", "shares", "dividend", "nft", "blockchain",
-            
-            # Shopping & E-commerce
-            "lazada", "shopee", "amazon", "ebay", "zalora", "buy", "shopping",
-            "discount", "sale", "gadget", "phone", "iphone", "samsung", "laptop",
-            
-            # Transportation (non-visa related locations)
-            "grab", "uber", "taxi", "jeep", "bus", "mrt", "lrt", "airport terminal",
-            "flight schedule", "airline", "pal", "cebu pacific", "air asia",
-            
-            # Medical & Health
-            "doctor", "hospital", "medicine", "sick", "disease", "covid", "vaccine",
-            "pharmacy", "mercury drug", "watsons", "clinic",
-            
-            # Random Topics
-            "zodiac", "horoscope", "astrology", "fortune", "lucky number",
-            "lottery", "lotto", "raffle", "contest", "joke", "riddle",
-            "ghost", "horror", "paranormal", "magic", "spell",
-            
-            # Other Businesses/Services (not State101)
-            "bank", "bdo", "bpi", "metrobank", "gcash", "paymaya", "coins",
-            "load", "prepaid", "postpaid", "globe", "smart", "pldt",
-            "hotel", "booking", "agoda", "airbnb", "resort", "beach",
-            
-            # Specific non-visa queries
-            "minecraft", "roblox", "fortnite", "pubg", "mobile legends", "dota",
-            "facebook", "instagram", "twitter", "telegram", "whatsapp",
-            "google", "search", "wikipedia", "tutorial", "how to make",
-            "news", "politics", "election", "government", "law", "court"
+            "calculator", "code", "program", "recipe", "cook", "game",
+            "movie", "song", "weather", "sports", "stock", "crypto",
+            "math", "solve", "equation", "homework", "essay", "write a story"
         ]
 
         # Intent synonyms mapped to canonical intents
@@ -344,142 +324,51 @@ class VisaAssistant:
             "location": [
                 "where are you", "where are you located", "where is your office",
                 "office address", "address", "location", "map", "directions",
-                "find you", "tiktok", "tiktok location", "tiktok video", "google map",
-                "how to get there", "how do i get there", "how can i get there",
-                "where can i find you", "office", "branch", "nasa saan", "saan office",
-                # Common misspellings and variations
-                "were are you", "wer r u", "adress", "addres", "direcsion", "locasion",
-                "were is ur office", "ofice", "offce", "locashun", "were u at",
-                # More natural language
-                "directions to your office", "how to go there", "paano pumunta", "saan kayo",
-                "makati ba", "pasig ba", "mall ba kayo", "building nyo", "landmark"
+                "find you", "tiktok", "tiktok location", "tiktok video", "google map"
             ],
-            "hours": [
-                "hours", "opening hours", "business hours", "schedule", "open time", "what time",
-                "when are you open", "what time do you open", "what time do you close",
-                "open today", "closed today", "available", "operating hours",
-                # Variations and slang
-                "wat time", "time open", "open ba kayo", "bukas ba", "sked", "scheds",
-                "anong oras", "schedule nyo", "open now", "closed now", "working hours",
-                "available ba", "pwede ba ngayon", "open ba today", "weekends", "saturday"
-            ],
-            "contact": [
-                "contact", "phone", "phone number", "call you", "email", "email address", 
-                "how to contact you", "contact you", "reach you", "how can i contact you",
-                "contact info", "contact details", "phone numbers", "mobile number",
-                # Variations and slang
-                "fone", "number", "txt", "text", "cp number", "mobile", "cellphone", 
-                "reach out", "get in touch", "call", "message", "contact nyo",
-                "paano makipag ugnayan", "numero nyo", "email nyo", "telepono",
-                # More variations
-                "contact information", "how to reach", "how do i call", "text you",
-                "whatsapp", "viber", "messenger", "dm", "chat"
-            ],
-            "website": [
-                "website", "web site", "web page", "webpage", "website page", "site", "link",
-                "web", "online", "url", "website nyo", "link nyo", "fb page", "facebook"
-            ],
+            "hours": ["hours", "opening hours", "business hours", "schedule", "open time", "what time"],
+            "contact": ["contact", "phone", "phone number", "call you", "email", "email address", "how to contact you", "contact you", "reach you", "how can i contact you"],
+            "website": ["website", "web site", "web page", "webpage", "website page"],
             "services": [
                 "services", "what services", "services do you offer",
-                "what services does state101 travel offer", "what do you do",
-                "what can you help with", "ano tulong nyo", "what kind of help",
-                # Variations
-                "serbisyo", "offer", "ano services", "wat u offer", "ano kaya nyo",
-                "what do you provide", "ano pwede", "available services", "offerings"
+                "what services does state101 travel offer"
             ],
-            "legit": [
-                "legit", "legitimacy", "is your company legit", "are you legit", 
-                "is this real", "is this true", "real", "true", "trustworthy", "scam", "fake",
-                "can i trust you", "are you registered", "official", "registered",
-                # Slang and variations
-                "totoo ba", "legit ba", "totoo", "tru", "4real", "fr", "for real",
-                "scammer", "scam ba", "fake ba", "trust", "trusted", "sketchy",
-                "reliable", "legit ba talaga", "sure ba", "safe ba", "maaasahan ba"
-            ],
+            "legit": ["legit", "legitimacy", "is your company legit"],
             "program details": [
                 "program details", "details of your program", "details of program",
                 "are trainings free", "is orientation free", "installment plans", "hidden charges",
-                "consultation free", "process", "procedure", "how it works",
-                "explain the process", "steps", "what happens", "timeline",
-                "fees related", "process related", "visa application process",
-                "how does visa application process work", "how does the process work",
-                "how does your process work", "flow", "how to apply",
-                # More variations
-                "paano process", "ano steps", "ano gagawin", "paano mag start",
-                "what is the process", "whats the procedure", "explain program"
+                "consultation free"
             ],
             "visa type": [
                 "visa type", "what type of visa", "what type of visa you offer",
                 "what types of visas do you process", "do you have student visa programs",
-                "o visa", "o-1 visa", "o1 visa", "o visa for us talent",
-                "tourist visa", "work visa", "student visa", "business visa",
-                "what visa", "ano visa", "types of visa", "visa options"
+                "o visa", "o-1 visa", "o1 visa", "o visa for us talent"
             ],
-            "qualifications": [
-                "qualifications", "qualification", "what are the qualifications",
-                "am i qualified", "can i apply", "eligible", "eligibility",
-                "requirements to apply", "do i qualify", "qualified ba ako",
-                "pwede ba ako", "pasok ba ako", "tanggap ba ako", "can i join"
-            ],
-            "age limit": [
-                "age", "age limit", "age related", "age requirement", "how old",
-                "minimum age", "maximum age", "too old", "too young",
-                "edad", "age limit ba", "pwede ba kahit matanda", "senior"
-            ],
-            "gender": [
-                "gender", "genders required", "male", "female", "gender requirement",
-                "lalaki", "babae", "gender ba", "required gender", "boys", "girls",
-                "for men", "for women", "lgbt", "lgbtq", "any gender"
-            ],
-            "graduates": [
-                "graduates", "undergraduate", "does it accept graduates only",
-                "college graduate", "high school", "diploma", "degree",
-                "need degree", "graduate ba", "undergrad", "walang degree",
-                "no diploma", "graduate lang ba", "college lang ba"
-            ],
-            "requirements": [
-                "requirements", "documents", "needed documents", "prepare", "preparation", 
-                "what should i prepare", "what to bring", "what do i need",
-                "documents needed", "papers needed", "initial requirements",
-                # Variations and slang
-                "reqs", "docs", "papers", "kailangan", "ano need", "wat to bring",
-                "dokumento", "requirement", "requirment", "documens",
-                "ano kailangan", "ano dalhin", "ano requirements", "documents to submit",
-                "what to submit", "needed papers", "initial docs"
-            ],
+            "qualifications": ["qualifications", "qualification", "what are the qualifications"],
+            "age limit": ["age", "age limit", "age related"],
+            "gender": ["gender", "genders required"],
+            "graduates": ["graduates", "undergraduate", "does it accept graduates only"],
+            "requirements": ["requirements", "documents", "needed documents", "prepare", "preparation", "what should i prepare", "what to bring"],
             "appointment": [
                 "appointment", "book", "schedule appointment", "how can i book an appointment",
-                "how can i start my application", "book appointment", "make appointment",
-                "set appointment", "schedule visit", "reserve", "booking",
-                # Variations and slang
-                "appoint", "sched", "schedule", "booking", "reserve", "set appointment",
-                "pano mag book", "paano mag appointment", "book appointment",
-                "mag pa schedule", "mag set ng appointment", "walk in", "walkin",
-                "can i visit", "pwede ba pumunta", "need appointment ba"
+                "how can i start my application"
             ],
-            "status": [
-                "status", "application status", "how do i know the status",
-                "check status", "track application", "follow up", "update",
-                # Variations
-                "track", "tracking", "update", "progress", "ano na", "kamusta na",
-                "application progress", "where is my application", "status ng application",
-                "ano nangyari", "approved na ba", "rejected ba", "pending pa ba"
-            ],
+            "status": ["status", "application status", "how do i know the status"],
             "price": [
                 "price", "cost", "fee", "how much", "payment", "payment options", "pay",
                 "installment", "hidden charges", "consultation free", "processing fee",
-                "what payment methods do you accept", "total cost", "full price",
-                # Variations and slang
-                "magkano", "presyo", "bayad", "pric", "kost", "free ba", "libre ba",
-                "how mch", "pricing", "fees", "rates", "rate", "charges",
-                "magkano lahat", "ano bayad", "mahal ba", "total", "down payment",
-                "dp", "monthly", "weekly", "discount", "promo", "cheap"
+                "what payment methods do you accept"
+            ],
+            "program details": [
+                "program details", "details of your program", "details of program",
+                "fees related", "process related",
+                "visa application process", "application process", "process",
+                "how does visa application process work", "how does the process work",
+                "how does your process work", "steps", "procedure", "flow", "timeline", "how to apply"
             ],
             "why choose": [
                 "why choose", "why choose state101", "why should i choose you", "why pick you",
-                "what makes you different", "advantages", "benefits", "bakit kayo",
-                "why you", "what makes you special", "why state101", "benefits nyo",
-                "advantage", "what do you offer that others dont"
+                "what makes you different", "advantages", "benefits"
             ],
         }
         # Build indexes
@@ -491,17 +380,16 @@ class VisaAssistant:
         if self.rag_enabled:
             self._build_rag_index()
 
-    # --------- INDEX BUILDERS (restored into class) ---------
     def _build_semantic_index(self):
-        """Populate self.semantic_entries with (intent, phrase) pairs for RapidFuzz routing."""
+        # Build a list of representative phrases for each intent.
         entries: List[Tuple[str, str]] = []
         for intent, syns in self.intent_synonyms.items():
             for s in syns:
                 entries.append((intent, s))
-        # Add the hardcoded keys themselves for direct matches
+        # Add the hardcoded keys as phrases as well
         for key in HARDCODED_RESPONSES.keys():
             entries.append((key, key))
-        # Deduplicate (case-insensitive)
+        # Deduplicate
         seen = set()
         deduped: List[Tuple[str, str]] = []
         for intent, text in entries:
@@ -512,12 +400,13 @@ class VisaAssistant:
         self.semantic_entries = deduped
 
     def _import_fastembed(self):
-        """Return fastembed TextEmbedding class if available, else None."""
+        # Prefer the top-level import if available
         try:
             if _FASTEMBED_TEXTEMBEDDING is not None:
                 return _FASTEMBED_TEXTEMBEDDING
         except NameError:
             pass
+        # Fallback: lazy import via importlib
         try:
             mod = importlib.import_module("fastembed")
             TextEmbedding = getattr(mod, "TextEmbedding")
@@ -530,19 +419,20 @@ class VisaAssistant:
         return [x / norm for x in vec]
 
     def _build_embedding_index(self):
-        """Build embedding-based intent routing index if fastembed is installed."""
         TextEmbedding = self._import_fastembed()
         if TextEmbedding is None:
             self.embedding_enabled = False
             return
         try:
             self._embedder = TextEmbedding()
+            # Build phrases similar to semantic index
             entries: List[Tuple[str, str]] = []
             for intent, syns in self.intent_synonyms.items():
                 for s in syns:
                     entries.append((intent, s))
             for key in HARDCODED_RESPONSES.keys():
                 entries.append((key, key))
+            # Dedup
             seen = set()
             deduped: List[Tuple[str, str]] = []
             for intent, text in entries:
@@ -555,14 +445,15 @@ class VisaAssistant:
             vectors = list(self._embedder.embed(texts))
             self.embedding_vectors = [self._l2_normalize(list(v)) for v in vectors]
         except Exception:
+            # Disable if anything fails
             self.embedding_enabled = False
 
-    # ---------- RAG SUPPORT (moved correctly into class) ----------
+    # ---------- RAG SUPPORT ----------
     def _list_knowledge_files(self) -> List[Path]:
         base = Path(self.rag_knowledge_dir)
         if not base.exists() or not base.is_dir():
             return []
-        exts = {".md", ".txt"}
+        exts = {".md", ".txt"}  # keep it simple; PDFs can be added later
         files: List[Path] = []
         for p in base.rglob("*"):
             if p.is_file() and p.suffix.lower() in exts:
@@ -597,12 +488,14 @@ class VisaAssistant:
     def _build_rag_index(self):
         files = self._list_knowledge_files()
         if not files:
-            self.rag_enabled = False
+            self.rag_enabled = False  # nothing to index; disable to save cycles
             return
+        # Load and chunk
         chunks: List[Tuple[str, str]] = []
         for f in files:
             txt = self._read_text_file(f)
             chunks.extend(self._chunk_text(txt, source=str(f)))
+        # Dedup tiny/blank chunks
         cleaned: List[Tuple[str, str]] = []
         seen = set()
         for src, ch in chunks:
@@ -615,6 +508,8 @@ class VisaAssistant:
             seen.add(key)
             cleaned.append((src, c))
         self.rag_chunks = cleaned
+
+        # Build embeddings if fastembed is available; else leave empty for fuzzy retrieval
         TextEmbedding = self._import_fastembed()
         if TextEmbedding is None:
             self.rag_vectors = []
@@ -628,11 +523,14 @@ class VisaAssistant:
             self.rag_vectors = []
 
     def _cosine_sim(self, a: List[float], b: List[float]) -> float:
-        return sum(x * y for x, y in zip(a, b))
+        return sum(x*y for x, y in zip(a, b))
 
     def rag_retrieve(self, prompt: str) -> List[Tuple[str, str]]:
+        """Return top-k (source, chunk) from knowledge base using embeddings when available,
+        otherwise fall back to RapidFuzz token_set_ratio ranking."""
         if not self.rag_enabled or not self.rag_chunks:
             return []
+        # Prefer embeddings
         if self.rag_vectors:
             TextEmbedding = self._import_fastembed()
             if TextEmbedding is not None:
@@ -648,6 +546,7 @@ class VisaAssistant:
                     return top
                 except Exception:
                     pass
+        # Fallback to token_set_ratio
         try:
             scored = []
             norm = self._normalize(prompt)
@@ -678,27 +577,15 @@ class VisaAssistant:
         return None
 
     def get_canonical_response(self, intent: str) -> str | None:
-        # Priority: dynamic KB overrides FIRST, then hardcoded fallbacks
-        # This ensures CMS updates by non-technical staff take precedence
-        
-        # 1. Check KB overrides (from CMS knowledgebase)
-        kb_overrides = getattr(self, "kb_overrides", {})
-        print(f"[DEBUG] get_canonical_response('{intent}') - KB has {len(kb_overrides)} entries: {list(kb_overrides.keys())}")
-        if intent in kb_overrides:
-            print(f"[DEBUG] ✅ Using KB for '{intent}'")
-            return kb_overrides[intent]
-        print(f"[DEBUG] ⚠️ No KB entry for '{intent}', falling back to hardcoded")
-        
-        # 2. Check direct hardcoded match
+        # Direct retrieval if a matching key exists
         if intent in HARDCODED_RESPONSES:
             return HARDCODED_RESPONSES[intent]
-        
-        # 3. Map intent aliases to underlying keys and check hardcoded fallback
+        # Map some intents to underlying keys
         mapping = {
             "location": "location",
             "hours": "hours",
-            "contact": "contact",  # KB overrides this, fallback to hardcoded contact
-            "website": "website",
+            "contact": "urgent",  # contains official phone numbers and email
+            "website": "website",  # dedicated website response
             "services": "services",
             "legit": "legit",
             "program details": "program details",
@@ -711,12 +598,10 @@ class VisaAssistant:
             "appointment": "appointment",
             "status": "status",
             "price": "price",
-            "why choose": "why choose",
         }
         key = mapping.get(intent)
         if key and key in HARDCODED_RESPONSES:
             return HARDCODED_RESPONSES[key]
-        
         return None
 
     def semantic_route(self, prompt: str) -> str | None:
@@ -760,365 +645,50 @@ class VisaAssistant:
         return None
 
     def pack_facts(self) -> dict:
-        """Build facts with precedence: Knowledgebase overrides > CMS footer/topbar > hardcoded.
-        Populates self.kb_overrides so get_canonical_response can serve dynamic answers."""
-        kb_enabled = bool(st.secrets.get("KB_OVERRIDE_ENABLED", True))
-        kb_dir = Path("knowledge")
-        kb_categories: dict[str, str] = {}
-        if kb_enabled and kb_dir.exists():
-            for p in kb_dir.glob("kb_*.md"):
-                try:
-                    raw = p.read_text(encoding="utf-8")
-                    if raw.startswith("---"):
-                        fm_end = raw.find("\n---", 3)
-                        if fm_end != -1:
-                            front = raw[3:fm_end].strip().splitlines()
-                            body = raw[fm_end+4:].strip()
-                            meta = {}
-                            for line in front:
-                                if ":" in line:
-                                    k, v = line.split(":", 1)
-                                    meta[k.strip().lower()] = v.strip()
-                            cat = meta.get("category") or meta.get("cat")
-                            if cat:
-                                cat_key = cat.lower().strip()
-                                # last write wins only if not already set; simplifies ordering
-                                if cat_key not in kb_categories:
-                                    kb_categories[cat_key] = body
-                    else:
-                        cat_key = p.stem.replace("kb_", "").lower().split("_")[0]
-                        if cat_key and cat_key not in kb_categories:
-                            kb_categories[cat_key] = raw.strip()
-                except Exception:
-                    continue
-
-        kb_to_intent = {
-            # Location/Address variations (KB: Pasig address + maps + TikTok)
-            "location": "location",
-            "located": "location",
-            "address": "location",
-            "map": "location",
-            "directions": "location",
-            "office": "location",
-            "find you": "location",
-            "where are you": "location",
-            "where is your office": "location",
-            "where can i find": "location",
-            "how to get there": "location",
-            "tiktok": "location",
-            "google map": "location",
-            "google maps": "location",
-            "pasig": "location",
-            "ortigas": "location",
-            "oasis": "location",
-            "hub b": "location",
-            "unit 223": "location",
-            
-            # Contact variations (KB: phones + email)
-            "contact": "contact",
-            "phone": "contact",
-            "phone number": "contact",
-            "mobile": "contact",
-            "number": "contact",
-            "call": "contact",
-            "call you": "contact",
-            "email": "contact",
-            "email address": "contact",
-            "reach": "contact",
-            "reach you": "contact",
-            "how to contact": "contact",
-            "contact info": "contact",
-            "contact information": "contact",
-            "get in touch": "contact",
-            "message": "contact",
-            "text": "contact",
-            "hotline": "contact",
-            
-            # Hours/Schedule variations (KB: Mon-Sat 9AM-5PM)
-            "hours": "hours",
-            "business hours": "hours",
-            "schedule": "hours",
-            "open": "hours",
-            "opening hours": "hours",
-            "what time": "hours",
-            "open time": "hours",
-            "time open": "hours",
-            "when open": "hours",
-            "operating hours": "hours",
-            "available": "hours",
-            "close": "hours",
-            "closing time": "hours",
-            "monday": "hours",
-            "saturday": "hours",
-            "sunday": "hours",
-            "weekdays": "hours",
-            "weekend": "hours",
-            
-            # Services variations (KB: US non-immigrant + Canada Express Entry)
-            "services": "services",
-            "what services": "services",
-            "services do you offer": "services",
-            "what do you offer": "services",
-            "service": "services",
-            "offer": "services",
-            "assistance": "services",
-            "help with": "services",
-            "us visa": "services",
-            "canada visa": "services",
-            "express entry": "services",
-            "non immigrant": "services",
-            "immigration": "services",
-            
-            # Requirements variations (KB: passport, 2x2, training cert, diploma, resume)
-            "requirements": "requirements",
-            "documents": "requirements",
-            "docs": "requirements",
-            "needed documents": "requirements",
-            "what to bring": "requirements",
-            "prepare": "requirements",
-            "preparation": "requirements",
-            "what should i prepare": "requirements",
-            "initial requirements": "requirements",
-            "document requirements": "requirements",
-            "passport": "requirements",
-            "photo": "requirements",
-            "2x2": "requirements",
-            "resume": "requirements",
-            "diploma": "requirements",
-            "certificate": "requirements",
-            "supporting documents": "requirements",
-            "need to submit": "requirements",
-            "submit": "requirements",
-            
-            # Program/Process variations (KB: explained during briefing)
-            "program details": "program details",
-            "program": "program details",
-            "process": "program details",
-            "procedure": "program details",
-            "steps": "program details",
-            "flow": "program details",
-            "timeline": "program details",
-            "how to apply": "program details",
-            "application process": "program details",
-            "fees related": "program details",
-            "process related": "program details",
-            "briefing": "program details",
-            "assessment": "program details",
-            "orientation": "program details",
-            "training": "program details",
-            "specifics": "program details",
-            "explained": "program details",
-            "details": "program details",
-            
-            # Legitimacy variations (KB: officially registered, Pasig permit)
-            "legit": "legit",
-            "legitimacy": "legit",
-            "legitimate": "legit",
-            "is your company legit": "legit",
-            "are you legit": "legit",
-            "registered": "legit",
-            "official": "legit",
-            "permit": "legit",
-            "accredited": "legit",
-            "licensed": "legit",
-            "scam": "legit",
-            "fake": "legit",
-            "trust": "legit",
-            "trustworthy": "legit",
-            
-            # Price/Cost variations (KB: discussed during briefing)
-            "price": "price",
-            "prices": "price",
-            "fees": "price",
-            "fee": "price",
-            "cost": "price",
-            "costs": "price",
-            "payment": "price",
-            "pay": "price",
-            "how much": "price",
-            "payment options": "price",
-            "installment": "price",
-            "rates": "price",
-            "pricing": "price",
-            "charge": "price",
-            "charges": "price",
-            "afford": "price",
-            "expensive": "price",
-            "cheap": "price",
-            "budget": "price",
-            
-            # Qualifications variations (KB: open to all, training/experience not required)
-            "qualification": "qualifications",
-            "qualifications": "qualifications",
-            "eligible": "qualifications",
-            "eligibility": "qualifications",
-            "who can apply": "qualifications",
-            "can i apply": "qualifications",
-            "am i qualified": "qualifications",
-            "requirements to apply": "qualifications",
-            "experience": "qualifications",
-            "training required": "qualifications",
-            "skills": "qualifications",
-            "background": "qualifications",
-            
-            # Appointment variations (KB: walk-ins accepted, booking recommended)
-            "appointment": "appointment",
-            "book": "appointment",
-            "schedule appointment": "appointment",
-            "how to book": "appointment",
-            "reserve": "appointment",
-            "set appointment": "appointment",
-            "booking": "appointment",
-            "walk in": "appointment",
-            "walkin": "appointment",
-            "drop by": "appointment",
-            "visit": "appointment",
-            "consultation": "appointment",
-            
-            # Status tracking variations (KB: email with reference or call)
-            "status": "status",
-            "track": "status",
-            "application status": "status",
-            "tracking": "status",
-            "update": "status",
-            "check status": "status",
-            "reference number": "status",
-            "follow up": "status",
-            "progress": "status",
-            
-            # Website variations
-            "website": "website",
-            "web site": "website",
-            "webpage": "website",
-            "web page": "website",
-            
-            # Visa type variations
-            "visa type": "visa type",
-            "type of visa": "visa type",
-            "what visa": "visa type",
-            "visa types": "visa type",
-            
-            # Age policy variations (KB: no age limit, physical capability)
-            "age limit": "age limit",
-            "age": "age limit",
-            "how old": "age limit",
-            "age requirement": "age limit",
-            "age restriction": "age limit",
-            "minimum age": "age limit",
-            "maximum age": "age limit",
-            "too old": "age limit",
-            "too young": "age limit",
-            "physically capable": "age limit",
-            
-            # Gender policy variations (KB: open to all genders)
-            "gender": "gender",
-            "male": "gender",
-            "female": "gender",
-            "gender requirement": "gender",
-            "gender orientation": "gender",
-            "lgbtq": "gender",
-            "women": "gender",
-            "men": "gender",
-            "lady": "gender",
-            "guy": "gender",
-            
-            # Graduates policy variations (KB: accepts graduates and undergraduates)
-            "graduates": "graduates",
-            "graduate": "graduates",
-            "undergraduate": "graduates",
-            "education": "graduates",
-            "degree": "graduates",
-            "college": "graduates",
-            "diploma required": "graduates",
-            "finished school": "graduates",
-            "no degree": "graduates",
-            "high school": "graduates",
-            
-            # Why choose variations
-            "why choose": "why choose",
-            "benefits": "why choose",
-            "advantages": "why choose",
-            "why pick": "why choose",
-        }
-        
-        # Store the comprehensive keyword mapping for reference (used by intent_synonyms in __init__)
-        # This helps document all the natural language variations we support
-        self.kb_keyword_map = kb_to_intent
-        
-        # Map KB file category names to canonical intent names
-        # This is what actually converts KB frontmatter categories to intent keys
-        kb_category_to_intent = {
-            "location": "location",
-            "contact": "contact",
-            "hours": "hours",
-            "services": "services",
-            "requirements": "requirements",
-            "program": "program details",
-            "legit": "legit",
-            "price": "price",
-            "qualification": "qualifications",
-            "age limit": "age limit",
-            "gender": "gender",
-            "graduate": "graduates",
-            "appointment": "appointment",
-            "status": "status",
-            "website": "website",
-            "visa type": "visa type",
-            "why choose": "why choose",
-        }
-        
-        # Build kb_overrides dict: intent_name -> KB content
-        self.kb_overrides = {}
-        for kb_cat, content in kb_categories.items():
-            intent = kb_category_to_intent.get(kb_cat, kb_cat)
-            self.kb_overrides[intent] = content.strip()
-        
-        # Debug: Print loaded KB overrides (helpful for troubleshooting)
-        if self.kb_overrides:
-            print(f"[KB] Loaded {len(self.kb_overrides)} knowledge base overrides: {list(self.kb_overrides.keys())}")
-
-        # REMOVED CMS /api/facts fallback - KB overrides are now truly first priority
-        # The precedence is now strictly: KB overrides > HARDCODED_RESPONSES > nothing
-        # This ensures knowledgebase updates via CMS /api/knowledgebase take full precedence
-
+        """Build a compact facts dictionary from hardcoded responses.
+        These are the only allowed canonical values the LLM may use in fallback."""
         def first_url(text: str) -> str | None:
             m = re.search(r"https?://\S+", text or "")
             return m.group(0) if m else None
 
-        address_line = self.kb_overrides.get("location") or (HARDCODED_RESPONSES.get("located") or "")
-        location_block = self.kb_overrides.get("location") or HARDCODED_RESPONSES.get("location") or address_line
-        map_url = first_url(location_block) or first_url(HARDCODED_RESPONSES.get("map", "")) or ""
+        # Address line (no links)
+        address_line = HARDCODED_RESPONSES.get("located") or ""
+        # Location block contains address + links
+        location_block = HARDCODED_RESPONSES.get("location") or address_line
+        map_url = first_url(HARDCODED_RESPONSES.get("map", "")) or first_url(location_block) or ""
+        # Extract TikTok link if present
+        tiktok_url = None
+        for url_match in re.findall(r"https?://\S+", location_block):
+            if "tiktok.com" in url_match:
+                tiktok_url = url_match
+                break
 
-        contact_src = self.kb_overrides.get("contact") or HARDCODED_RESPONSES.get("contact", "")
-        if isinstance(contact_src, list):
-            phones = contact_src
-            contact_text = "\n".join(contact_src)
-        else:
-            contact_text = contact_src or ""
-            phones = re.findall(r"\+?\d[\d\s-]{7,}\d", contact_text)
-        email_match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", self.kb_overrides.get("contact", "") or contact_text)
+        # Extract phones and email from 'urgent' block (contains official numbers and email)
+        urgent = HARDCODED_RESPONSES.get("urgent", "")
+        phones = re.findall(r"\+?\d[\d\s-]{7,}\d", urgent)
+        email_match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", urgent)
         email_addr = email_match.group(0) if email_match else ""
 
         facts = {
             "address": address_line,
             "location_block": location_block,
             "map_url": map_url,
-            "tiktok_url": None,
-            "website_url": self.kb_overrides.get("website") or HARDCODED_RESPONSES.get("website", ""),
-            "hours": self.kb_overrides.get("hours") or HARDCODED_RESPONSES.get("hours", ""),
+            "tiktok_url": tiktok_url or "",
+            "website_url": HARDCODED_RESPONSES.get("website", ""),
+            "hours": HARDCODED_RESPONSES.get("hours", ""),
             "phones": phones,
             "email": email_addr,
-            "services": self.kb_overrides.get("services") or HARDCODED_RESPONSES.get("services", ""),
-            "legitimacy": self.kb_overrides.get("legit") or HARDCODED_RESPONSES.get("legit", ""),
-            "program_details": self.kb_overrides.get("program details") or self.kb_overrides.get("program") or HARDCODED_RESPONSES.get("program details", ""),
-            "qualifications": self.kb_overrides.get("qualifications") or HARDCODED_RESPONSES.get("qualifications", ""),
-            "age_policy": self.kb_overrides.get("age limit") or HARDCODED_RESPONSES.get("age limit", ""),
-            "gender_policy": self.kb_overrides.get("gender") or HARDCODED_RESPONSES.get("gender", ""),
-            "graduates_policy": self.kb_overrides.get("graduates") or HARDCODED_RESPONSES.get("graduates", ""),
-            "price_note": self.kb_overrides.get("price") or HARDCODED_RESPONSES.get("price", HARDCODED_RESPONSES.get("how much", "")),
-            "requirements": self.kb_overrides.get("requirements") or HARDCODED_RESPONSES.get("requirements", ""),
-            "contact_block": self.kb_overrides.get("contact") or HARDCODED_RESPONSES.get("urgent", ""),
-            "form_hint": "📝 Please visit our website to apply: https://state101-travel-website.vercel.app/services",
+            "services": HARDCODED_RESPONSES.get("services", ""),
+            "legitimacy": HARDCODED_RESPONSES.get("legit", ""),
+            "program_details": HARDCODED_RESPONSES.get("program details", ""),
+            "qualifications": HARDCODED_RESPONSES.get("qualifications", ""),
+            "age_policy": HARDCODED_RESPONSES.get("age limit", ""),
+            "gender_policy": HARDCODED_RESPONSES.get("gender", ""),
+            "graduates_policy": HARDCODED_RESPONSES.get("graduates", ""),
+            "price_note": HARDCODED_RESPONSES.get("price", HARDCODED_RESPONSES.get("how much", "")),
+            "requirements": HARDCODED_RESPONSES.get("requirements", ""),
+            "contact_block": HARDCODED_RESPONSES.get("urgent", ""),
+            "form_hint": "📝 Please visit the 'Application Form' tab to begin your application.",
         }
         return facts
 
@@ -1149,7 +719,7 @@ class VisaAssistant:
             "hours": {"hours", "open", "opening", "schedule", "time", "times"},
             "contact": {"contact", "phone", "call", "email", "mail", "number"},
             "requirements": {"requirements", "documents", "docs", "papers", "needed"},
-            "price": {"price", "cost", "fee", "payment", "pay", "rates", "rate", "much"},
+            "price": {"price", "cost", "fee", "payment", "pay", "rates", "rate", "how", "much"},
             "status": {"status", "track", "tracking", "update", "reference"},
             "visa type": {"type", "b1", "b2", "what", "visa", "kind"},
         }
@@ -1228,11 +798,6 @@ class VisaAssistant:
         tokens = normalized_prompt.split()
         if any(g in normalized_prompt for g in greetings) and len(tokens) <= 3:
             return True
-        
-        # Very short queries (3 words or less): be lenient, likely simple questions
-        # This helps with translated Filipino queries like "is this true?", "where?", "real?"
-        if len(tokens) <= 3:
-            return True
 
         # Keyword-based relevance
         has_relevant_keyword = any(keyword in normalized_prompt for keyword in self.relevant_keywords)
@@ -1264,21 +829,11 @@ class VisaAssistant:
     def check_query_relevance(self, prompt: str) -> bool:
         """Use an LLM to decide if a query is relevant to State101 visa services.
         Returns True when relevant, False when off-topic. Caches results per normalized prompt.
-        Uses KB content to provide context about what State101 actually offers.
         """
         try:
             cache_key = self._normalize(prompt)
             if cache_key in self._relevance_cache:
                 return self._relevance_cache[cache_key]
-
-            # Build dynamic context from KB overrides to show what we actually cover
-            kb_topics = []
-            if hasattr(self, "kb_overrides") and self.kb_overrides:
-                kb_topics = list(self.kb_overrides.keys())
-            
-            kb_context = ""
-            if kb_topics:
-                kb_context = f"\n\nState101 Travel covers these topics: {', '.join(kb_topics)}."
 
             relevance_system = (
                 "You are a strict query filter for State101 Travel (US/Canada visa assistance). "
@@ -1287,13 +842,9 @@ class VisaAssistant:
             content = (
                 "Decide if the following query is about State101 Travel or US/Canada visa assistance.\n"
                 "Consider the following rules:\n"
-                "- RELEVANT topics: visas (US/Canada tourist/business/student/work), requirements, documents, services, location/address/map/directions, hours, contact info, appointments, pricing, eligibility, qualifications, age limits, gender policies, graduate requirements, legitimacy, program details, application status, greetings.\n"
-                "- CONTEXT ASSUMPTION: Ambiguous queries about location, contact, directions, office, hours, or services default to asking about State101 Travel unless explicitly mentioning OTHER businesses.\n"
-                "- LOCATION/DIRECTION QUERIES: 'how to get there?', 'office?', 'where?', 'directions?', 'map?' = asking about OUR office (RELEVANT).\n"
-                "- CONTACT QUERIES: 'contact?', 'phone?', 'email?', 'how to reach you?' = asking for OUR contact info (RELEVANT).\n"
-                "- HOURS QUERIES: 'hours?', 'open?', 'schedule?' = asking about OUR hours (RELEVANT).\n"
-                "- OFFTOPIC: food (nuggets, burger, pizza), entertainment (movies, games), coding/tech, math/homework, general knowledge, weather, sports, OR explicitly asking about OTHER specific businesses/places (e.g., 'where is Jollibee?', 'how to get to SM Mall?').\n"
-                f"{kb_context}\n\n"
+                "- RELEVANT topics: visas (US/Canada tourist/business/student/work), requirements, documents, services, our location/address/map, our hours, our contact, appointments, pricing, eligibility, qualifications, greetings.\n"
+                "- OFFTOPIC topics: food/products (nuggets, chicken), entertainment, coding, math/homework, general knowledge, or any other businesses/places.\n"
+                "- IMPORTANT: Generic place/location queries that refer to third-party places (e.g., airports, malls, restaurants) are OFFTOPIC unless they explicitly reference our office (e.g., 'how do I get from NAIA to your office?').\n\n"
                 f"User query: \"{prompt}\"\n\n"
                 "Answer with exactly one word: RELEVANT or OFFTOPIC"
             )
@@ -1321,43 +872,13 @@ class VisaAssistant:
     @sleep_and_retry
     @limits(calls=10, period=60)
     def generate(self, prompt):
-        original_prompt = prompt
         try:
-            # Detect and translate if not English - DO THIS FIRST!
-            # Allow even 2-word queries to be translated (was > 2, now >= 2)
-            if len(prompt.split()) >= 2:
+            # Detect and translate if not English
+            if len(prompt.split()) > 2:
                 lang = detect(prompt)
-                print(f"[LANG DETECT] Detected language: {lang}")
-                
-                # Common Filipino words that indicate Tagalog/Filipino language
-                # If detected wrong language but contains Filipino words, force to Filipino
-                filipino_indicators = ["ba", "na", "ng", "sa", "ko", "mo", "ka", "po", "naman", "kasi", "totoo", "saan", "ano", "paano"]
-                prompt_lower = prompt.lower()
-                has_filipino = any(word in prompt_lower.split() for word in filipino_indicators)
-                
-                if has_filipino and lang not in ["tl", "fil"]:
-                    print(f"[LANG DETECT] Filipino indicators detected, forcing language to 'tl' (was: {lang})")
-                    lang = "tl"
-                
                 if lang != "en":
-                    try:
-                        translated = GoogleTranslator(source=lang, target="en").translate(prompt)
-                        print(f"[TRANSLATION] '{prompt}' ({lang}) → '{translated}'")
-                        prompt = translated
-                    except Exception as e:
-                        # If translation fails with detected lang, try Filipino as fallback
-                        if lang != "tl" and has_filipino:
-                            print(f"[TRANSLATION] Failed with {lang}, trying 'tl': {e}")
-                            translated = GoogleTranslator(source="tl", target="en").translate(prompt)
-                            print(f"[TRANSLATION RETRY] '{original_prompt}' (tl) → '{translated}'")
-                            prompt = translated
-                        else:
-                            raise
-                else:
-                    print(f"[TRANSLATION] English detected, no translation needed")
-        except Exception as e:
-            print(f"[TRANSLATION ERROR] {e}")
-            # Continue with original prompt if translation fails
+                    prompt = GoogleTranslator(source=lang, target="en").translate(prompt)
+        except:
             pass
 
         # small, consistent thinking delay to discourage rapid-fire outputs
@@ -1365,11 +886,6 @@ class VisaAssistant:
             time.sleep(self.thinking_delay)
         except Exception:
             pass
-
-        # --- Populate KB overrides FIRST (before any intent matching) ---
-        # This ensures knowledgebase from CMS takes precedence over hardcoded responses
-        if self.smart_facts_mode:
-            _ = self.pack_facts()  # Populates self.kb_overrides
 
         # --- Early domain relevance gating ---
         # 1) Optional strict guard for third‑party place queries not referring to us
@@ -1383,13 +899,19 @@ class VisaAssistant:
                     "Please ask about visa requirements, appointments, contact info, or our location."
                 )
 
-        # 2) Use simple heuristic gate (like the working code)
-        # Skip the overly strict LLM classifier that was rejecting valid queries
-        if not self.is_relevant_query(prompt):
-            return (
-                "😊 I can help with State101 Travel's US/Canada visa assistance inquiries only. "
-                "Please ask about visa requirements, appointments, contact info, or our location."
-            )
+        # 2) Prefer LLM classifier when enabled; otherwise use heuristic gate
+        if self.llm_relevance_enabled:
+            if not self.check_query_relevance(prompt):
+                return (
+                    "😊 I can help with State101 Travel's US/Canada visa assistance inquiries only. "
+                    "Please ask about visa requirements, appointments, contact info, or our location."
+                )
+        else:
+            if not self.is_relevant_query(prompt):
+                return (
+                    "😊 I can help with State101 Travel's US/Canada visa assistance inquiries only. "
+                    "Please ask about visa requirements, appointments, contact info, or our location."
+                )
 
         # If the user explicitly asks for a composition (table/summary/why choose/etc.),
         # go straight to the facts-backed LLM to synthesize the answer in the requested style.
@@ -1465,7 +987,7 @@ class VisaAssistant:
             if canonical:
                 return canonical
             if self.strict_mode:
-                return "📘 I can share our official information only. Please ask about requirements, location, hours, or services. Visit https://state101-travel-website.vercel.app/services to apply."
+                return "📘 I can share our official information only. Please ask about requirements, location, hours, services, or submit the application form."
 
         # RapidFuzz router before embeddings to avoid over-eager semantic matches
         sem_answer = self.semantic_route(prompt)
@@ -1481,42 +1003,18 @@ class VisaAssistant:
             if canonical:
                 return canonical
             if self.strict_mode:
-                return "📘 I can share our official information only. Please ask about requirements, location, hours, or services. Visit https://state101-travel-website.vercel.app/services to apply."
+                return "📘 I can share our official information only. Please ask about requirements, location, hours, services, or submit the application form."
 
         # Check for form request
         if "form" in prompt.lower() or "apply" in prompt.lower():
-            return "📝 Please visit our website to apply: https://state101-travel-website.vercel.app/services\n\nYou can find the application form and all requirements there."
+            return "📝 Please visit the 'Application Form' tab to begin your application."
 
-        # LLM-based intent classification as fallback (for slang, translated queries, etc.)
-        # This helps handle queries like "totoo?" (real?), "legit ba?", "san kayo?" that passed relevance
-        # but didn't match exact keywords
-        try:
-            intent_prompt = f"""Classify this user query into ONE of these intents, or respond with 'general' if it doesn't fit:
-
-Intents: location, contact, hours, services, requirements, program details, legit, price, qualifications, age limit, gender, graduates, appointment, status, visa type
-
-User query: "{prompt}"
-
-Respond with ONLY the intent name (lowercase), nothing else."""
-
-            intent_response = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": intent_prompt}],
-                temperature=0.1,
-                max_tokens=10
-            )
-            llm_intent = intent_response.choices[0].message.content.strip().lower()
-            
-            # Check if LLM found a valid intent
-            if llm_intent and llm_intent != "general":
-                canonical = self.get_canonical_response(llm_intent)
-                if canonical:
-                    return canonical
-        except Exception:
-            pass  # Fall through to general LLM if classification fails
-
-        # NOTE: Removed direct hardcoded bypass here - all responses now go through
-        # get_canonical_response() which checks KB first, then hardcoded fallback
+        # Clean prompt and match hardcoded answers
+        normalized_prompt = re.sub(r'[^\w\s]', '', prompt).strip().lower()
+        for question, answer in HARDCODED_RESPONSES.items():
+            normalized_question = re.sub(r'[^\w\s]', '', question).strip().lower()
+            if normalized_question in normalized_prompt:
+                return answer
 
         # Rate limiting
         now = time.time()
@@ -1580,222 +1078,573 @@ Never invent, rename, or alter addresses, phone numbers, emails, hours, or servi
             return response_text
             
         except Exception as e:
-            # Use KB contact info if available, otherwise hardcoded fallback
-            contact_info = self.kb_overrides.get("contact") if hasattr(self, "kb_overrides") else None
-            if not contact_info:
-                contact_info = HARDCODED_RESPONSES.get("contact", "📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com")
-            return f"⚠️ Our system is experiencing high traffic. Please try again or contact us directly:\n\n{contact_info}"
-
-# ========= BASIC KB SYNC (PHASE 1: tasks 2-4) =========
-# Support both local development and production deployment
-KB_API_URL_LOCAL = "http://localhost:3000/api/knowledgebase"
-KB_API_URL_PRODUCTION = "https://state101-travel-website.vercel.app/api/knowledgebase"
-# Default to production, override with KB_API_URL in secrets for local dev
-KB_API_URL_DEFAULT = KB_API_URL_PRODUCTION
-FACTS_URL_DEFAULT = "http://localhost:3000/api/facts"
-
-# We enforce strict precedence: KB (/api/knowledgebase) > HARDCODED_RESPONSES
-# This ensures CMS updates by non-technical staff always take priority over footer data.
-@st.cache_data(ttl=300)
-def get_cms_facts():
-    url = st.secrets.get("FACTS_URL", FACTS_URL_DEFAULT)
+            return "⚠️ System busy. Please contact us directly:\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com"
+# ========== GOOGLE SHEETS INTEGRATION ==========
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
+def save_to_sheet(data):
     try:
-        r = requests.get(url, timeout=10)
-        r.raise_for_status()
-        data = r.json()
-        # Normalize shapes we expect
-        if not isinstance(data, dict):
-            return None
-        phones = data.get("phones")
-        if isinstance(phones, str):
-            phones = [phones]
-        elif not isinstance(phones, list):
-            phones = []
-        return {
-            "address": (data.get("address") or "").strip(),
-            "phones": [p for p in (phones or []) if p],
-            "email": (data.get("email") or "").strip(),
-            "hours": (data.get("hours") or "").strip(),
-            "website_url": (data.get("website_url") or "").strip(),
-        }
+        creds = Credentials.from_service_account_info(
+            st.secrets["GCP_SERVICE_ACCOUNT"],
+            scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        )
+        sheet = gspread.authorize(creds).open("state101application").sheet1
+        sheet.append_row(data)
+        return True
     except Exception:
-        return None
+        return False
 
-def _kb_index_path() -> Path:
-    return Path("knowledge") / ".knowledge_index.json"
+# ========== EMAIL SENDING (REPLACES SHEETS SUBMISSION) ==========
+def send_application_email(form_data, uploaded_files, drive_folder_url: str | None = None):
+    """Send application details and attachments to a configured email.
 
-def _load_kb_index() -> dict:
-    p = _kb_index_path()
-    if p.exists():
-        try:
-            return json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
-            return {}
-    return {}
-
-def _save_kb_index(idx: dict) -> None:
-    p = _kb_index_path()
-    p.write_text(json.dumps(idx, indent=2), encoding="utf-8")
-
-def _item_hash(item: dict) -> str:
-    raw = f"{item.get('title','')}|{item.get('category','')}|{item.get('content','')}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
-
-def sync_remote_knowledgebase():
-    """Fetch website CMS knowledgebase and mirror into knowledge/*.md.
-    Basic fallback: if fetch fails or returns empty, do nothing and report status.
-    Returns a status dict for UI feedback.
+    Expects the following keys in st.secrets:
+      - SMTP_HOST (default: smtp.gmail.com)
+      - SMTP_PORT (default: 587)
+      - SMTP_USER
+      - SMTP_PASS (or SMTP_PASSWORD)
+      - MAIL_TO (recipient email)
     """
-    kb_url = st.secrets.get("KB_API_URL", KB_API_URL_DEFAULT)
-    status = {"ok": False, "count": 0, "changed": 0, "error": None, "stale": False}
-    try:
-        resp = requests.get(kb_url, timeout=15)
-        resp.raise_for_status()
-        items = resp.json()
-    except Exception as e:
-        status["error"] = f"fetch-failed: {e}"
-        return status
+    host = st.secrets.get("SMTP_HOST", "smtp.gmail.com")
+    port = int(st.secrets.get("SMTP_PORT", 587))
+    user = st.secrets.get("SMTP_USER")
+    pwd = st.secrets.get("SMTP_PASS", st.secrets.get("SMTP_PASSWORD"))
+    to_addr = st.secrets.get("MAIL_TO")
+    from_addr = st.secrets.get("FROM_EMAIL", user)
 
-    status["count"] = len(items) if isinstance(items, list) else 0
-    if not items:
-        # Basic fallback: leave local snapshot untouched; mark as stale
-        status["error"] = "remote-empty"
-        status["stale"] = True
-        return status
+    if not all([user, pwd, to_addr]):
+        raise RuntimeError("Missing SMTP settings in secrets.toml (SMTP_USER, SMTP_PASS, MAIL_TO)")
 
-    kb_dir = Path("knowledge")
-    kb_dir.mkdir(exist_ok=True)
+    msg = EmailMessage()
+    subject = f"New Visa Application - {form_data['full_name']} ({form_data['visa_type']})"
+    msg["Subject"] = subject
+    msg["From"] = from_addr
+    msg["To"] = to_addr
+    # Make it easy to reply to the applicant directly
+    if form_data.get("email"):
+        msg["Reply-To"] = form_data["email"]
 
-    # Group items by category and merge multiple items into one file per category
-    category_items = {}
-    for it in items:
+    body_lines = [
+            "A new visa application has been submitted:\n",
+        f"Full Name: {form_data['full_name']}",
+        f"Email: {form_data['email']}",
+        f"Phone: {form_data['phone']}",
+        f"Age: {form_data['age']}",
+        f"Address: {form_data['address']}",
+        f"Visa Type: {form_data['visa_type']}",
+        f"Preferred Day: {form_data.get('preferred_day', 'N/A')}",
+        f"Available Time: {form_data['available_time']}",
+        f"Submitted At: {time.strftime('%Y-%m-%d %H:%M')}"
+    ]
+    if drive_folder_url:
+        body_lines.append(f"Drive Folder: {drive_folder_url}")
+    msg.set_content("\n".join(body_lines))
+
+    # Attach uploaded files
+    for uf in uploaded_files:
         try:
-            category = (it.get("category") or "").strip().lower()
-            if not category:
-                continue
-            if category not in category_items:
-                category_items[category] = []
-            category_items[category].append({
-                "id": it.get("id"),
-                "title": (it.get("title") or "").strip(),
-                "content": (it.get("content") or "").rstrip(),
-                "updated": (it.get("updatedAt") or "").strip(),
-            })
-        except Exception:
-            continue
-
-    # Hash index: track changes per category (not per ID)
-    index = _load_kb_index()
-    new_index = {}
-    changed = 0
-    
-    for category, cat_items in category_items.items():
-        try:
-            # Sanitize category name for filename (remove spaces, special chars)
-            safe_category = re.sub(r'[^\w\-]', '_', category).strip('_')
-            if not safe_category:
-                continue
-                
-            # Merge multiple items in same category with section headers
-            if len(cat_items) == 1:
-                # Single item: use content as-is
-                merged_content = cat_items[0]["content"]
-                merged_title = cat_items[0]["title"]
+            filename = getattr(uf, "name", "attachment")
+            file_bytes = uf.getvalue() if hasattr(uf, "getvalue") else uf.read()
+            mime_type, _ = mimetypes.guess_type(filename)
+            if mime_type:
+                maintype, subtype = mime_type.split("/", 1)
             else:
-                # Multiple items: merge with section headers
-                merged_title = f"{category.title()} Information"
-                sections = []
-                for item in cat_items:
-                    sections.append(f"## {item['title']}\n\n{item['content']}")
-                merged_content = "\n\n---\n\n".join(sections)
-            
-            # Get most recent update timestamp
-            latest_updated = max((item["updated"] for item in cat_items if item["updated"]), default="")
-            
-            # Create hash from merged content
-            hash_input = f"{merged_title}|{category}|{merged_content}"
-            h = hashlib.sha256(hash_input.encode("utf-8")).hexdigest()
-            
-            # Check if content changed
-            if index.get(category) == h:
-                new_index[category] = h
-                continue
-            
-            # Write category-based filename (e.g., kb_contact.md, kb_location.md)
-            md_path = kb_dir / f"kb_{safe_category}.md"
-            md = textwrap.dedent(f"""
-            ---
-            title: {merged_title}
-            category: {category}
-            updated: {latest_updated}
-            items: {len(cat_items)}
-            ---
+                maintype, subtype = ("application", "octet-stream")
+            msg.add_attachment(file_bytes, maintype=maintype, subtype=subtype, filename=filename)
+        except Exception:
+            # If any attachment fails, continue sending others
+            continue
 
-            {merged_content}
-            """).lstrip()
-            md_path.write_text(md, encoding="utf-8")
-            new_index[category] = h
-            changed += 1
+    # Send via SMTP
+    context = ssl.create_default_context()
+    try:
+        if port == 465:
+            # Implicit SSL (SMTPS)
+            with smtplib.SMTP_SSL(host, port, context=context) as server:
+                server.login(user, pwd)
+                server.send_message(msg)
+        else:
+            # STARTTLS
+            with smtplib.SMTP(host, port) as server:
+                server.ehlo()
+                server.starttls(context=context)
+                server.login(user, pwd)
+                server.send_message(msg)
+    except Exception as e1:
+        # Fallback: try the other common port (587 or 465)
+        alt_port = 587 if port != 587 else 465
+        try:
+            if alt_port == 465:
+                with smtplib.SMTP_SSL(host, alt_port, context=context) as server:
+                    server.login(user, pwd)
+                    server.send_message(msg)
+            else:
+                with smtplib.SMTP(host, alt_port) as server:
+                    server.ehlo()
+                    server.starttls(context=context)
+                    server.login(user, pwd)
+                    server.send_message(msg)
+        except Exception as e2:
+            raise RuntimeError(f"SMTP failed on port {port}: {e1}; fallback on {alt_port} also failed: {e2}")
+    return True
+
+# ========== GOOGLE DRIVE BACKUP ==========
+def _sanitize_filename(name: str) -> str:
+    # Remove characters not allowed in Drive names just in case
+    return re.sub(r"[\\/:*?\"<>|]+", "-", name).strip()
+
+def upload_to_drive(form_data, uploaded_files):
+    """Create a subfolder under DRIVE_PARENT_FOLDER_ID and upload form.txt + attachments.
+
+    Returns the folder webViewLink URL.
+    """
+    parent_id = st.secrets.get("DRIVE_PARENT_FOLDER_ID")
+    if not parent_id:
+        raise RuntimeError("Missing DRIVE_PARENT_FOLDER_ID in secrets.toml")
+
+    creds = Credentials.from_service_account_info(
+        st.secrets["GCP_SERVICE_ACCOUNT"], scopes=["https://www.googleapis.com/auth/drive"]
+    )
+    drive = build("drive", "v3", credentials=creds)
+
+    # Preflight: ensure parent folder is accessible
+    try:
+        drive.files().get(fileId=parent_id, fields="id, name", supportsAllDrives=True).execute()
+    except Exception as e:
+        raise RuntimeError(f"Drive parent folder not accessible. Check sharing and ID. Underlying error: {e}")
+
+    # Create subfolder name like 20251107-1430 - Full Name
+    when = datetime.now().strftime("%Y%m%d-%H%M")
+    folder_name = _sanitize_filename(f"{when} - {form_data['full_name']}")
+
+    folder_metadata = {
+        "name": folder_name,
+        "mimeType": "application/vnd.google-apps.folder",
+        "parents": [parent_id],
+    }
+    folder = drive.files().create(body=folder_metadata, fields="id, webViewLink", supportsAllDrives=True).execute()
+    folder_id = folder.get("id")
+    folder_link = folder.get("webViewLink") or f"https://drive.google.com/drive/folders/{folder_id}"
+
+    # Upload form details as text file
+    form_lines = [
+        f"Full Name: {form_data['full_name']}",
+        f"Email: {form_data['email']}",
+        f"Phone: {form_data['phone']}",
+        f"Age: {form_data['age']}",
+        f"Address: {form_data['address']}",
+        f"Visa Type: {form_data['visa_type']}",
+        f"Preferred Day: {form_data.get('preferred_day', 'N/A')}",
+        f"Available Time: {form_data['available_time']}",
+        f"Submitted At: {time.strftime('%Y-%m-%d %H:%M')}",
+    ]
+    form_text = "\n".join(form_lines)
+    media = MediaIoBaseUpload(io.BytesIO(form_text.encode("utf-8")), mimetype="text/plain")
+    drive.files().create(
+        body={"name": "application.txt", "parents": [folder_id]},
+        media_body=media,
+        fields="id",
+        supportsAllDrives=True,
+    ).execute()
+
+    # Upload each attachment
+    for uf in uploaded_files:
+        try:
+            filename = _sanitize_filename(getattr(uf, "name", "attachment"))
+            file_bytes = uf.getvalue() if hasattr(uf, "getvalue") else uf.read()
+            mime_type, _ = mimetypes.guess_type(filename)
+            if not mime_type:
+                mime_type = "application/octet-stream"
+            media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=mime_type)
+            drive.files().create(
+                body={"name": filename, "parents": [folder_id]},
+                media_body=media,
+                fields="id",
+                supportsAllDrives=True,
+            ).execute()
         except Exception:
             continue
-    
-    # Clean up old ID-based files (kb_cmi*.md) if they exist
+
+    return folder_link
+
+# ========== VALIDATION HELPERS ==========
+def _is_valid_email(addr: str) -> Tuple[bool, str | None]:
+    """Validate email format (syntax only, no DNS) returning (ok, error_message)."""
     try:
-        for old_file in kb_dir.glob("kb_cmi*.md"):
-            old_file.unlink()
-    except Exception:
-        pass
+        validate_email(addr, check_deliverability=False)
+        # Extra layer: catch common domain typos (e.g., gmil.com -> gmail.com)
+        try:
+            local, domain = addr.rsplit("@", 1)
+        except ValueError:
+            # No domain part; let the main validator's result stand
+            return True, None
+        domain = domain.lower().strip()
 
-    # Save new index
+        # Allow-list of common consumer email domains
+        common_domains = {
+            "gmail.com",
+            "googlemail.com",  # legacy but valid
+            "yahoo.com",
+            "ymail.com",
+            "outlook.com",
+            "hotmail.com",
+            "live.com",
+            "msn.com",
+            "aol.com",
+            "icloud.com",
+            "me.com",
+            "proton.me",
+            "protonmail.com",
+        }
+
+        if domain in common_domains:
+            return True, None
+
+        # If not a known consumer domain, check if it's a near-miss of one; if so, reject with suggestion.
+        # This prevents false blocks on corporate domains (e.g., user@company.co).
+        def _similarity(a: str, b: str) -> float:
+            try:
+                # Prefer RapidFuzz if available (imported at top)
+                from rapidfuzz import fuzz as _rf
+                return _rf.ratio(a, b) / 100.0
+            except Exception:
+                # Fallback to difflib
+                import difflib
+                return difflib.SequenceMatcher(None, a, b).ratio()
+
+        best_match = None
+        best_score = 0.0
+        for cand in common_domains:
+            score = _similarity(domain, cand)
+            if score > best_score:
+                best_score = score
+                best_match = cand
+
+        # Treat as typo when very close to a popular domain but not equal
+        if best_match and domain != best_match and best_score >= 0.90:
+            return False, f"Did you mean {best_match}?"
+
+        return True, None
+    except EmailNotValidError as e:
+        # Some versions of email-validator don't expose 'title'; prefer str(e) for compatibility
+        return False, str(e)
+
+def _validate_ph_phone(num: str) -> Tuple[bool, str | None]:
+    """Validate Philippine phone number. Accepts 09XXXXXXXXX or +639XXXXXXXXX.
+    Returns (is_valid, e164_or_none)."""
+    if not num:
+        return False, None
+    # Strip obvious formatting characters
+    raw = re.sub(r"[\s()-]", "", num)
+    # If it starts with 09 convert to +639 for parsing consistency
+    if raw.startswith("09") and len(raw) == 11:
+        raw = "+63" + raw[1:]
     try:
-        _save_kb_index(new_index)
+        parsed = phonenumbers.parse(raw, "PH")
     except Exception:
-        pass
+        return False, None
+    if phonenumbers.is_valid_number_for_region(parsed, "PH"):
+        e164 = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+        return True, e164
+    return False, None
 
-    # Mark success and return status
-    status["ok"] = True
-    status["changed"] = changed
-    return status
+# ========== APPLICATION FORM ==========
+def show_application_form():
+    with st.form("visa_form"):
+        st.subheader("📝 Initial Assessment Form")
+        st.caption("Kindly fill up the following details for initial assessment")
 
-# ========== DEAD CODE (Application Form Functions - No Longer Used) ==========
-# The following functions are commented out as the application form has been moved to the website.
-# These are kept for reference but are not called anywhere in the active code.
+        cols = st.columns(2)
+        full_name = cols[0].text_input("Full Name*")
+        phone = cols[1].text_input("Phone Number*")  
+        email = st.text_input("Email*")  
+        # No strict age limit per FAQs; allow a broad, realistic range. Using 1–120 as bounds.
+        age = st.number_input("Age*", min_value=1, max_value=120)
+        address = st.text_area("Complete Address*")
 
-# # ========== GOOGLE SHEETS INTEGRATION ==========
-# @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
-# def save_to_sheet(data):
-#     try:
-#         creds = Credentials.from_service_account_info(
-#             st.secrets["GCP_SERVICE_ACCOUNT"],
-#             scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-#         )
-#         sheet = gspread.authorize(creds).open("state101application").sheet1
-#         sheet.append_row(data)
-#         return True
-#     except Exception:
-#         return False
+        visa_type = st.radio("Visa Applying For*", ["Canadian Visa ", "American Visa"])
+        day_of_week = st.radio(
+            "Preferred Day (Monday–Sunday)*",
+            [
+                "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+            ]
+        )
+        available_time = st.selectbox(
+            "What time of day are you free for consultation?*",
+            ["9AM-12PM", "1PM-3PM", "4PM-5PM"]
+        )
 
-# # ========== EMAIL SENDING (REPLACES SHEETS SUBMISSION) ==========
-# def send_application_email(form_data, uploaded_files, drive_folder_url: str | None = None):
-#     ... (function body omitted for brevity)
+        st.markdown("---")
+        st.markdown("#### Upload your Requirements (optional)")
+        uploads = st.file_uploader(
+            "Upload any available requirements (e.g., passport, certificates, Resume, Diploma)",
+            accept_multiple_files=True,
+            type=["pdf", "jpg", "jpeg", "png", "heic", "heif", "doc", "docx", "rtf", "txt"],
+            help="Optional but recommended. Allowed formats: PDF, JPG, JPEG, PNG, HEIC/HEIF, DOC/DOCX, RTF, TXT."
+        )
 
-# # ========== GOOGLE DRIVE BACKUP ==========
-# def upload_to_drive(form_data, uploaded_files):
-#     ... (function body omitted for brevity)
+        # State flags for modal flow
+        if "trigger_no_uploads_modal" not in st.session_state:
+            st.session_state.trigger_no_uploads_modal = False
+        if "no_uploads_confirmed" not in st.session_state:
+            st.session_state.no_uploads_confirmed = False
+        if "pending_form_payload" not in st.session_state:
+            st.session_state.pending_form_payload = None
 
-# # ========== VALIDATION HELPERS ==========
-# def _is_valid_email(addr: str) -> Tuple[bool, str | None]:
-#     ... (function body omitted for brevity)
+        submitted = st.form_submit_button("Submit Application", use_container_width=True)
+        if submitted:
+            if not all([full_name, email, phone, address]):
+                st.error("Please fill all required fields (*)")
+            else:
+                # Email validation
+                ok_email, email_err_msg = _is_valid_email(email)
+                if not ok_email:
+                    st.error(f"Please enter a valid email address: {email_err_msg}")
+                    return
+                # Phone validation
+                ok_phone, phone_e164 = _validate_ph_phone(phone)
+                if not ok_phone:
+                    st.error("Please enter a valid Philippine phone number (e.g., 09XXXXXXXXX or +639XXXXXXXXXX)")
+                    return
+                # If no uploads: first attempt triggers modal; subsequent attempt with confirmed flag proceeds
+                if (not uploads or len(uploads) == 0) and not st.session_state.no_uploads_confirmed:
+                    # Preserve the form data so we can reuse after confirmation
+                    st.session_state.pending_form_payload = {
+                        "full_name": full_name,
+                        "email": email,
+                        "phone": phone_e164 or phone,
+                        "age": age,
+                        "address": address,
+                        "visa_type": visa_type,
+                        "preferred_day": day_of_week,
+                        "available_time": available_time,
+                    }
+                    st.session_state.trigger_no_uploads_modal = True
+                    st.info("Please confirm you want to submit without uploading any requirements.")
+                    # Rerun so the modal (outside the form) renders immediately in this cycle
+                    st.rerun()
+                # Normalize stored phone to E.164 format
+                phone = phone_e164 or phone
+                form_payload = {
+                    "full_name": full_name,
+                    "email": email,
+                    "phone": phone,
+                    "age": age,
+                    "address": address,
+                    "visa_type": visa_type,
+                    "preferred_day": day_of_week,
+                    "available_time": available_time,
+                }
 
-# def _validate_ph_phone(num: str) -> Tuple[bool, str | None]:
-#     ... (function body omitted for brevity)
+                # Enforce allowed file types server-side as a defense-in-depth
+                allowed_exts = {"pdf", "jpg", "jpeg", "png", "heic", "heif", "doc", "docx", "rtf", "txt"}
+                uploaded_files = []
+                skipped_files = []
+                for uf in (uploads or []):
+                    name = getattr(uf, "name", "") or ""
+                    ext = str(Path(name).suffix).lower().lstrip(".")
+                    if ext in allowed_exts:
+                        uploaded_files.append(uf)
+                    else:
+                        skipped_files.append(name or "(unnamed)")
+                if skipped_files:
+                    st.info(f"These files were skipped due to unsupported type: {', '.join(skipped_files)}")
 
-# # ========== APPLICATION FORM ==========
-# def show_application_form():
-#     ... (function body omitted for brevity)
+                email_ok = False
+                sheet_ok = False
+                drive_ok = False
+                drive_link = None
+                email_err = None
+                sheet_err = None
+                drive_err = None
 
-# def show_requirements():
-#     ... (function body omitted for brevity)
+                # Try Google Drive backup (subfolder + files) first to capture link
+                try:
+                    drive_link = upload_to_drive(form_payload, uploaded_files)
+                    drive_ok = True
+                except Exception as e:
+                    drive_ok = False
+                    drive_err = str(e)
+
+                # Try send email (include drive link if available)
+                try:
+                    send_application_email(form_payload, uploaded_files, drive_folder_url=drive_link)
+                    email_ok = True
+                except Exception as e:
+                    email_ok = False
+                    email_err = str(e)
+
+                # Build row for Google Sheets backup (includes preferred_day and Drive link)
+                sheet_row = [
+                    full_name,
+                    email,
+                    phone,
+                    str(age),
+                    address,
+                    visa_type,
+                    day_of_week,
+                    available_time,
+                    time.strftime("%Y-%m-%d %H:%M"),
+                    drive_link or "",
+                ]
+
+                # Try save to Google Sheet as backup
+                try:
+                    sheet_ok = save_to_sheet(sheet_row)
+                except Exception as e:
+                    sheet_ok = False
+                    sheet_err = str(e)
+
+                # Report outcome (end-user friendly)
+                if email_ok or sheet_ok or drive_ok:
+                    st.success("✅ Application submitted! Our team will contact you within 24 hours.")
+                else:
+                    st.error("❌ We couldn't submit your application due to a temporary issue. Please try again in a few minutes or contact us at state101ortigasbranch@gmail.com.")
+
+                # Optional diagnostics
+                debug = bool(st.secrets.get("DEBUG_SUBMISSION", False))
+                if debug and (email_err or drive_err or sheet_err):
+                    with st.expander("Diagnostics (for developers)"):
+                        st.write({
+                            "drive_ok": drive_ok,
+                            "drive_err": drive_err,
+                            "email_ok": email_ok,
+                            "email_err": email_err,
+                            "sheet_ok": sheet_ok,
+                            "sheet_err": sheet_err,
+                            "drive_parent": st.secrets.get("DRIVE_PARENT_FOLDER_ID"),
+                            "smtp_host": st.secrets.get("SMTP_HOST"),
+                            "smtp_port": st.secrets.get("SMTP_PORT"),
+                            "mail_to": st.secrets.get("MAIL_TO"),
+                        })
+
+                # Show concise error hints only in debug mode
+                if debug:
+                    if not email_ok and email_err:
+                        st.info(f"Email error: {email_err}")
+                    if not drive_ok and drive_err:
+                        st.info(f"Drive error: {drive_err}")
+
+    # Outside the form: handle modal confirmation and final submission without uploads
+    # If confirmation granted and we have a pending payload, finalize submission without uploads FIRST
+    if st.session_state.get("no_uploads_confirmed") and st.session_state.get("pending_form_payload"):
+        form_payload = st.session_state.pending_form_payload
+        # Clear flags to avoid duplicate submissions on rerun
+        st.session_state.no_uploads_confirmed = False
+        st.session_state.pending_form_payload = None
+        st.session_state.trigger_no_uploads_modal = False
+
+        email_ok = False
+        sheet_ok = False
+        drive_ok = False
+        drive_link = None
+        email_err = None
+        sheet_err = None
+        drive_err = None
+        uploaded_files = []  # intentionally empty
+
+        try:
+            drive_link = upload_to_drive(form_payload, uploaded_files)
+            drive_ok = True
+        except Exception as e:
+            drive_ok = False
+            drive_err = str(e)
+        try:
+            send_application_email(form_payload, uploaded_files, drive_folder_url=drive_link)
+            email_ok = True
+        except Exception as e:
+            email_ok = False
+            email_err = str(e)
+
+        sheet_row = [
+            form_payload["full_name"],
+            form_payload["email"],
+            form_payload["phone"],
+            str(form_payload["age"]),
+            form_payload["address"],
+            form_payload["visa_type"],
+            form_payload.get("preferred_day", ""),
+            form_payload["available_time"],
+            time.strftime("%Y-%m-%d %H:%M"),
+            drive_link or "",
+        ]
+        try:
+            sheet_ok = save_to_sheet(sheet_row)
+        except Exception as e:
+            sheet_ok = False
+            sheet_err = str(e)
+
+        if email_ok or sheet_ok or drive_ok:
+            st.success("✅ Application submitted without uploads. You can send documents later.")
+        else:
+            st.error("❌ We couldn't submit your application due to a temporary issue. Please try again or contact us directly.")
+
+        debug = bool(st.secrets.get("DEBUG_SUBMISSION", False))
+        if debug and (email_err or drive_err or sheet_err):
+            with st.expander("Diagnostics (for developers)"):
+                st.write({
+                    "drive_ok": drive_ok,
+                    "drive_err": drive_err,
+                    "email_ok": email_ok,
+                    "email_err": email_err,
+                    "sheet_ok": sheet_ok,
+                    "sheet_err": sheet_err,
+                })
+        if debug:
+            if not email_ok and email_err:
+                st.info(f"Email error: {email_err}")
+            if not drive_ok and drive_err:
+                st.info(f"Drive error: {drive_err}")
+
+    # Otherwise, if a modal is requested, open it or show themed fallback prompt
+    elif st.session_state.get("trigger_no_uploads_modal"):
+        # If dialog feature exists, open it; else provide inline fallback prompt with buttons
+        if _DIALOG_DECORATOR:
+            _no_uploads_modal()
+        else:
+            # Theme-aware inline fallback matching chatbot UI
+            theme_name = st.session_state.get("theme", "White")
+            theme = COLOR_THEMES.get(theme_name, COLOR_THEMES["White"])
+            accent = theme.get("accent", "#DC143C")
+            secondary = theme.get("secondary", "#F5F5F5")
+            text_color = theme.get("text", "#000000")
+
+            st.markdown(
+                f"""
+                <div style="padding:10px 12px; background:{secondary}; color:{text_color};
+                            border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
+                    <div style=\"color:#b00020; font-weight:700;\">Note: this can help us improve efficiency</div>
+                </div>
+                <div style="margin:6px 0 12px 0; color:{accent}; font-weight:600;">
+                    Are you sure you don't want to upload any requirements yet?
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Yes, submit without uploads", key="fallback_yes_submit", use_container_width=True):
+                    st.session_state.no_uploads_confirmed = True
+                    st.session_state.trigger_no_uploads_modal = False
+                    st.rerun()
+            with c2:
+                if st.button("No, I'll upload files", key="fallback_no_cancel", use_container_width=True):
+                    st.session_state.no_uploads_confirmed = False
+                    st.session_state.trigger_no_uploads_modal = False
+                    st.session_state.pending_form_payload = None
+                    st.rerun()
+
+# ========== REQUIREMENTS DISPLAY ==========
+def show_requirements():
+    st.subheader("📋 Initial Requirements Checklist")
+    st.markdown(HARDCODED_RESPONSES["requirements"])
+    st.divider()
+    st.write("""
+    **Need Help? Contact Us:**
+    - 📞 +639058044426 or 639692510672 
+    - 📧 state101ortigasbranch@gmail.com
+    - 📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig
+    - ⏰ Mon-Sat 9AM-5PM
+    """)
 
 # ========== APPLY THEME ==========
 def apply_theme(theme_name):
@@ -2057,8 +1906,7 @@ def main():
     st.set_page_config(
         page_title="State101 Visa Assistant",
         page_icon=page_icon,
-        layout="centered",  # center the main content for better desktop/mobile look
-        initial_sidebar_state="collapsed"  # sidebar starts hidden
+        layout="centered"  # center the main content for better desktop/mobile look
     )
     
     # Initialize theme in session state
@@ -2091,8 +1939,10 @@ all information is complete and correctly formatted.
 The chatbot is designed to provide a seamless experience with several key functions:
 • Conversational Assistant: You can ask questions about Canadian and American visas, and your chat
 history is saved for you to review.
-• Information & Guidance: The chatbot provides information about visas, requirements, and services.
-• Application & Requirements: Users are directed to https://state101-travel-website.vercel.app/services for the official application form and detailed requirements checklist.
+• Application Form: A dedicated tab for submitting your personal and contact details for visa
+assistance.
+• Visa Requirements: The chatbot provides a clear checklist of necessary documents for Canadian
+and American visa applications in a separate tab.
 • Language Support: It can detect and translate non-English messages to improve communication
 accuracy.
 • AI-Powered Responses: While many common questions have pre-set answers for consistency, the
@@ -2158,13 +2008,16 @@ these terms.
             st.session_state.theme = "Black" if st.session_state.theme == "White" else "White"
             st.rerun()
 
-        # Center the main content with responsive max width
+        # Remove sidebar entirely and center the main container with a clean max-width
         st.markdown(
                 """
                 <style>
+                    /* Hide sidebar */
+                    [data-testid=stSidebar], .css-1d391kg { display: none !important; }
+
                     /* Center the main content with responsive max width */
                     .block-container {
-                        max-width: 900px;
+                        max-width: 900px;          /* good balance for desktop */
                         margin-left: auto;
                         margin-right: auto;
                         padding-left: 1.25rem !important;
@@ -2186,89 +2039,39 @@ these terms.
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Hidden sidebar for admin functions (KB sync)
-    with st.sidebar:
-        st.markdown("### ⚙️ Admin Tools")
-        st.caption("Knowledge Base Management")
-        
-        if st.button("🔄 Refresh Knowledgebase", use_container_width=True, key="sidebar_kb_refresh"):
-            status = sync_remote_knowledgebase()
-            if status.get("ok"):
-                # Rebuild assistant so new files are indexed when RAG is enabled
-                st.session_state.chatbot = VisaAssistant()
-                st.success(f"✅ Synced {status['count']} items\n📝 Updated {status['changed']} files")
-                st.session_state["last_kb_sync"] = {
-                    "ts": time.strftime('%Y-%m-%d %H:%M'),
-                    "count": status.get("count", 0),
-                    "changed": status.get("changed", 0),
-                }
-            else:
-                err = status.get("error") or "unknown"
-                if status.get("stale") or err == "remote-empty":
-                    st.warning("⚠️ KB is empty remotely. Keeping local snapshot.")
-                else:
-                    st.error(f"❌ KB sync failed: {err}")
-        
-        if st.session_state.get("last_kb_sync"):
-            meta = st.session_state["last_kb_sync"]
-            st.divider()
-            st.caption("**Last Sync:**")
-            st.caption(f"🕒 {meta['ts']}")
-            st.caption(f"📊 Items: {meta['count']} | Changed: {meta['changed']}")
+    tab1, tab2, tab3 = st.tabs(["Chat Assistant", "Application Form", "Requirements"])
 
-    # Single tab interface - chat only (application and requirements moved to website)
-    st.markdown("### 💬 Chat with us about US/Canada Visa Services")
-    st.caption("For applications and requirements, visit: https://state101-travel-website.vercel.app/services")
-    st.divider()
+    with tab1:
+        # Create a container for chat messages
+        chat_container = st.container()
+        
+        # Display chat messages
+        with chat_container:
+            for msg in st.session_state.messages:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
+        
+        # Add empty space to push content up
+        st.markdown("<br>" * 2, unsafe_allow_html=True)
 
-    # Create a container for chat messages
-    chat_container = st.container()
-    
-    # Display chat messages
-    with chat_container:
-        for msg in st.session_state.messages:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
-    
-    # Add empty space to push content up
-    st.markdown("<br>" * 2, unsafe_allow_html=True)
+        # Input box at the bottom (only in tab1)
+        user_prompt = st.chat_input("Ask about US and Canada visas...")
+        if user_prompt:
+            # Show user's message
+            st.session_state.messages.append({"role": "user", "content": user_prompt})
+            
+            # Get assistant response
+            bot_response = st.session_state.chatbot.generate(user_prompt)
+            st.session_state.messages.append({"role": "assistant", "content": bot_response})
+            
+            # Rerun to refresh and show new messages
+            st.rerun()
 
-    # Input box at the bottom
-    user_prompt = st.chat_input("Ask about US and Canada visas...")
-    if user_prompt:
-        # Show user's message
-        st.session_state.messages.append({"role": "user", "content": user_prompt})
-        
-        # Get assistant response with user-friendly status
-        # Ensure instance has the latest method (handles rare hot-reload edge cases)
-        bot = st.session_state.get("chatbot")
-        if bot is None or not hasattr(bot, "generate") or not callable(getattr(bot, "generate", None)):
-            st.session_state.chatbot = VisaAssistant()
-            bot = st.session_state.chatbot
-        
-        # Show friendly thinking message while processing
-        with st.spinner("💭 Thinking longer for accurate answer..."):
-            bot_response = bot.generate(user_prompt)
-        
-        st.session_state.messages.append({"role": "assistant", "content": bot_response})
-        
-        # Rerun to refresh and show new messages
-        st.rerun()
+    with tab2:
+        show_application_form()
+
+    with tab3:
+        show_requirements()
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
