@@ -43,15 +43,15 @@ if _DIALOG_DECORATOR:
         text_color = theme.get("text", "#000000")
 
         st.markdown(
-                f"""
-                <div style="padding:10px 12px; background:{secondary}; color:{text_color};
-                            border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
-                    <div style="color:#b00020; font-weight:700;">Note: this can help us improve efficiency</div>
-                </div>
-                <div style="margin:6px 0 12px 0; color:{accent}; font-weight:600;">
-                    Are you sure you don't want to upload any requirements yet?
-                </div>
-                """,
+            f"""
+            <div style="padding:10px 12px; background:{secondary}; color:{text_color};
+                        border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
+                <div style="color:#b00020; font-weight:700;">Note: this can help us improve efficiency</div>
+            </div>
+            <div style="margin:6px 0 12px 0; color:{text_color}; font-weight:600;">
+                Are you sure you don't want to upload any requirements yet?
+            </div>
+            """,
             unsafe_allow_html=True,
         )
         col1, col2 = st.columns(2)
@@ -895,22 +895,22 @@ class VisaAssistant:
             refers_to_us = any(m in text for m in self._us_reference_markers)
             if mentions_third_party and not refers_to_us:
                 return (
-                    "😊 I can help with State101 Travel's US/Canada visa assistance inquiries only. "
-                    "Please ask about visa requirements, appointments, contact info, or our location."
+                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
+                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
                 )
 
         # 2) Prefer LLM classifier when enabled; otherwise use heuristic gate
         if self.llm_relevance_enabled:
             if not self.check_query_relevance(prompt):
                 return (
-                    "😊 I can help with State101 Travel's US/Canada visa assistance inquiries only. "
-                    "Please ask about visa requirements, appointments, contact info, or our location."
+                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
+                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
                 )
         else:
             if not self.is_relevant_query(prompt):
                 return (
-                    "😊 I can help with State101 Travel's US/Canada visa assistance inquiries only. "
-                    "Please ask about visa requirements, appointments, contact info, or our location."
+                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
+                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
                 )
 
         # If the user explicitly asks for a composition (table/summary/why choose/etc.),
@@ -1271,62 +1271,9 @@ def _is_valid_email(addr: str) -> Tuple[bool, str | None]:
     """Validate email format (syntax only, no DNS) returning (ok, error_message)."""
     try:
         validate_email(addr, check_deliverability=False)
-        # Extra layer: catch common domain typos (e.g., gmil.com -> gmail.com)
-        try:
-            local, domain = addr.rsplit("@", 1)
-        except ValueError:
-            # No domain part; let the main validator's result stand
-            return True, None
-        domain = domain.lower().strip()
-
-        # Allow-list of common consumer email domains
-        common_domains = {
-            "gmail.com",
-            "googlemail.com",  # legacy but valid
-            "yahoo.com",
-            "ymail.com",
-            "outlook.com",
-            "hotmail.com",
-            "live.com",
-            "msn.com",
-            "aol.com",
-            "icloud.com",
-            "me.com",
-            "proton.me",
-            "protonmail.com",
-        }
-
-        if domain in common_domains:
-            return True, None
-
-        # If not a known consumer domain, check if it's a near-miss of one; if so, reject with suggestion.
-        # This prevents false blocks on corporate domains (e.g., user@company.co).
-        def _similarity(a: str, b: str) -> float:
-            try:
-                # Prefer RapidFuzz if available (imported at top)
-                from rapidfuzz import fuzz as _rf
-                return _rf.ratio(a, b) / 100.0
-            except Exception:
-                # Fallback to difflib
-                import difflib
-                return difflib.SequenceMatcher(None, a, b).ratio()
-
-        best_match = None
-        best_score = 0.0
-        for cand in common_domains:
-            score = _similarity(domain, cand)
-            if score > best_score:
-                best_score = score
-                best_match = cand
-
-        # Treat as typo when very close to a popular domain but not equal
-        if best_match and domain != best_match and best_score >= 0.90:
-            return False, f"Did you mean {best_match}?"
-
         return True, None
     except EmailNotValidError as e:
-        # Some versions of email-validator don't expose 'title'; prefer str(e) for compatibility
-        return False, str(e)
+        return False, e.title or str(e)
 
 def _validate_ph_phone(num: str) -> Tuple[bool, str | None]:
     """Validate Philippine phone number. Accepts 09XXXXXXXXX or +639XXXXXXXXX.
@@ -1376,7 +1323,7 @@ def show_application_form():
         st.markdown("---")
         st.markdown("#### Upload your Requirements (optional)")
         uploads = st.file_uploader(
-            "Upload any available requirements (e.g., passport, certificates, Resume, Diploma)",
+            "Upload any available requirements (e.g., passport, photo, certificates, Resume, Diploma)",
             accept_multiple_files=True,
             type=["pdf", "jpg", "jpeg", "png", "heic", "heif", "doc", "docx", "rtf", "txt"],
             help="Optional but recommended. Allowed formats: PDF, JPG, JPEG, PNG, HEIC/HEIF, DOC/DOCX, RTF, TXT."
@@ -1390,7 +1337,7 @@ def show_application_form():
         if "pending_form_payload" not in st.session_state:
             st.session_state.pending_form_payload = None
 
-        submitted = st.form_submit_button("Submit Application", use_container_width=True)
+        submitted = st.form_submit_button("Submit Application")
         if submitted:
             if not all([full_name, email, phone, address]):
                 st.error("Please fill all required fields (*)")
@@ -1614,7 +1561,7 @@ def show_application_form():
                             border-left:4px solid {accent}; border-radius:6px; font-weight:600; margin-bottom:10px;">
                     <div style=\"color:#b00020; font-weight:700;\">Note: this can help us improve efficiency</div>
                 </div>
-                <div style="margin:6px 0 12px 0; color:{accent}; font-weight:600;">
+                <div style="margin:6px 0 12px 0; color:{text_color}; font-weight:600;">
                     Are you sure you don't want to upload any requirements yet?
                 </div>
                 """,
@@ -1691,19 +1638,6 @@ def apply_theme(theme_name):
     .stButton>button:hover {{
         filter: brightness(1.05);
         box-shadow: 0 0 10px {theme['accent']};
-    }}
-    /* Force the form submit button and its inner elements to use blue text regardless of nested styling */
-    /* More aggressive selector set to force blue text for submit button including nested spans */
-    .stForm .stButton > button,
-    .stForm .stButton > button *,
-    .stForm .stButton>button span,
-    .stForm .stButton>button div {{
-        color: #1E90FF !important;
-        -webkit-text-fill-color: #1E90FF !important;
-    }}
-    .stForm .stButton > button {{
-        background-color: #000000 !important;
-        border: 2px solid {theme['accent']} !important;
     }}
 
     /* Outlined / minimal buttons (keeps existing UI consistent) */
@@ -2075,3 +2009,19 @@ these terms.
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
