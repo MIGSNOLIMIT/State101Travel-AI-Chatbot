@@ -1840,7 +1840,7 @@ def main():
     st.set_page_config(
         page_title="State101 Visa Assistant",
         page_icon=page_icon,
-        layout="centered"  # center the main content for better desktop/mobile look
+        layout="centered"
     )
     
     # Initialize theme in session state
@@ -1854,71 +1854,126 @@ def main():
         # Apply theme even to terms page
         apply_theme(st.session_state.theme)
         
-        st.title("📝 Terms and Conditions")
-        st.write("""
-        Before using our services, please read and agree to the following:
-
-       State101 Chatbot Terms and Conditions
-By using the State101 Chatbot, you agree to the following terms and conditions.
-1. General Disclaimer
-The chatbot is for information and initial consultation only. The information it provides is not legal
-advice and should not replace a formal consultation with a qualified professional. To get
-personalized guidance and move forward with any application, you must book an official
-appointment with our team.
-2. Personal Data
-Any personal data you provide, including through the Application Form, is handled securely. It will be
-used solely to help with your visa assistance and consultation. We use strict validation rules to ensure
-all information is complete and correctly formatted.
-3. Chatbot Functionality
-The chatbot is designed to provide a seamless experience with several key functions:
-• Conversational Assistant: You can ask questions about Canadian and American visas, and your chat
-history is saved for you to review.
-• Application Form: A dedicated tab for submitting your personal and contact details for visa
-assistance.
-• Visa Requirements: The chatbot provides a clear checklist of necessary documents for Canadian
-and American visa applications in a separate tab.
-• Language Support: It can detect and translate non-English messages to improve communication
-accuracy.
-• AI-Powered Responses: While many common questions have pre-set answers for consistency, the
-chatbot can also use AI to give more detailed responses to complex queries.
-• Fallback Logic: In case of technical issues, the chatbot will provide a friendly notification and our
-contact information. It also uses rate limiting to prevent excessive requests and maintain service
-stability.
-• Session Management: The chatbot remembers your interactions and agreements within a single
-session, so you won't lose your chat history or have to re-agree to the terms if you refresh the page.
-4. Limitation of Liability
-State101 Travel is not liable for any direct or indirect damages resulting from the use of the chatbot.
-This includes but isn't limited to visa application rejections, delays, or any loss of income or travel
-plans.
-5. Changes to Terms
-We reserve the right to update these terms at any time. Any significant changes will be
-communicated to our clients. By continuing to use the chatbot, you agree to the latest version of
-these terms.
-
-        """)
-
+        st.markdown("""## 📝 Terms and Conditions""")
         
+        # Structured Terms and Conditions
+        with st.container():
+            st.markdown("""
+            
+            ###### By using State101 Travel Chatbot, you agree to the following terms and conditions. Please read the followings carefully:
+            """)
+            
+            # Section 1
+            with st.expander("**1. General Disclaimer**", expanded=True):
+                st.markdown("""
+                The chatbot is for information and initial consultation only. The information it provides is not legal advice and should not replace a formal consultation with a qualified professional. To get personalized guidance and move forward with any application, you must book an official appointment with our team.
+                """)
+            
+            # Section 2
+            with st.expander("**2. Personal Data**"):
+                st.markdown("""
+                Any personal data you provide, including through the Application Form, is handled securely. It will be used solely to help with your visa assistance and consultation. We use strict validation rules to ensure all information is complete and correctly formatted.
+                """)
+            
+            # Section 3
+            with st.expander("**3. Chatbot Functionality**"):
+                st.markdown("""
+                The chatbot is designed to provide a seamless experience with several key functions:
+
+                • **Conversational Assistant**: You can ask questions about Canadian and American visas, and your chat history is saved for you to review.
+                
+                • **Application Form**: A dedicated tab for submitting your personal and contact details for visa assistance.
+                
+                • **Visa Requirements**: Provides a clear checklist of necessary documents for Canadian and American visa applications.
+                
+                • **Language Support**: Can detect and translate non-English messages to improve communication accuracy.
+                
+                • **AI-Powered Responses**: While many common questions have pre-set answers for consistency, the chatbot can also use AI to give more detailed responses to complex queries.
+                
+                • **Fallback Logic**: In case of technical issues, the chatbot will provide a friendly notification and our contact information. It also uses rate limiting to prevent excessive requests and maintain service stability.
+                
+                • **Session Management**: The chatbot remembers your interactions and agreements within a single session, so you won't lose your chat history or have to re-agree to the terms if you refresh the page.
+                """)
+            
+            # Section 4
+            with st.expander("**4. Limitation of Liability**"):
+                st.markdown("""
+                State101 Travel is not liable for any direct or indirect damages resulting from the use of the chatbot. This includes but isn't limited to visa application rejections, delays, or any loss of income or travel plans.
+                """)
+            
+            # Section 5
+            with st.expander("**5. Changes to Terms**"):
+                st.markdown("""
+                We reserve the right to update these terms at any time. Any significant changes will be communicated to our clients. By continuing to use the chatbot, you agree to the latest version of these terms.
+                """)
+        
+        st.markdown("---")
+        
+        # Agreement Section - Clean and Professional Design
         st.markdown("""
         <style>
-        div[data-testid="stCheckbox"] label p {
-            color: #0066ff !important;  /* Blue text */
-            font-weight: bold !important;
-            font-size: 1rem !important;
+        .agreement-container {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .agreement-message {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+        }
+        .stButton>button {
+            background-color: #6c757d !important;
+            color: white !important;
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem 2rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .stButton>button:hover {
+            background-color: #5a6268 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         </style>
         """, unsafe_allow_html=True)
+        
+        # Agreement container with content inside
+        st.markdown(
+            '''
+            <div class="agreement-container">
+                <div class="agreement-message">
+                    Please accept the Terms and Conditions to continue using State101 Travel Chatbot
+                </div>
+            </div>
+            ''', 
+            unsafe_allow_html=True
+        )
+        
+        # Single Agree button centered
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("Agree to Terms", use_container_width=True, type="primary"):
+                st.session_state.agreed = True
+                # Add welcome message to chat history when user agrees
+                st.session_state.messages = [{
+                    "role": "assistant", 
+                    "content": "Hello! 👋 Welcome to State101 Travel. How can I help you today? Feel free to ask about visa requirements, application process, our location, and etc.!"
+                }]
+                st.rerun()
+        
+        # Stop execution if not agreed
+        st.stop()
 
-        if st.checkbox("I agree to the Terms and Conditions"):
-            st.session_state.agreed = True
-            st.rerun()
-        else:
-            st.stop()
-
+    # Rest of your main function continues here...
     # Apply selected theme after agreement
     apply_theme(st.session_state.theme)
-
     
-    # Theme toggle button - SIMPLE VERSION THAT WILL WORK
+    # Theme toggle button
     current_theme = st.session_state.theme
     toggle_icon = COLOR_THEMES[current_theme]["icon"]
     
@@ -1927,62 +1982,98 @@ these terms.
 
     with col_logo:
         if logo_path.exists():
-            # use_column_width deprecated; replaced with use_container_width
             st.image(str(logo_path), use_container_width=True)
         else:
             st.markdown("<div style='font-size:46px'>🛂</div>", unsafe_allow_html=True)
 
     with col_title:
-        st.title("State101 Visa Assistant")
+        st.title("State101 Travel Chatbot")
         st.caption("Specializing in US and Canada Visa Applications")
 
     with col_toggle:
-        # Simple button that will definitely be visible
         if st.button(toggle_icon, key="theme_toggle_button"):
             st.session_state.theme = "Black" if st.session_state.theme == "White" else "White"
             st.rerun()
 
-        # Remove sidebar entirely and center the main container with a clean max-width
-        st.markdown(
-                """
-                <style>
-                    /* Hide sidebar */
-                    [data-testid=stSidebar], .css-1d391kg { display: none !important; }
-
-                    /* Center the main content with responsive max width */
-                    .block-container {
-                        max-width: 900px;          /* good balance for desktop */
-                        margin-left: auto;
-                        margin-right: auto;
-                        padding-left: 1.25rem !important;
-                        padding-right: 1.25rem !important;
-                    }
-
-                    /* Mobile tweaks */
-                    @media (max-width: 640px) {
-                        .block-container { max-width: 100%; padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
-                    }
-                </style>
-                """,
-                unsafe_allow_html=True,
-        )
+    # Remove sidebar and center content
+    st.markdown(
+        """
+        <style>
+            [data-testid=stSidebar], .css-1d391kg { display: none !important; }
+            .block-container {
+                max-width: 900px;
+                margin-left: auto;
+                margin-right: auto;
+                padding-left: 1.25rem !important;
+                padding-right: 1.25rem !important;
+            }
+            @media (max-width: 640px) {
+                .block-container { 
+                    max-width: 100%; 
+                    padding-left: 0.75rem !important; 
+                    padding-right: 0.75rem !important; 
+                }
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     # Initialize chatbot only after terms are accepted
     if "chatbot" not in st.session_state and st.session_state.agreed:
         st.session_state.chatbot = VisaAssistant()
     if "messages" not in st.session_state:
-        st.session_state.messages = []
-
+        st.session_state.messages = [{
+            "role": "assistant", 
+            "content": "Hello! 👋 Welcome to State101 Travel. How can I help you today? Feel free to ask about visa requirements, application process, our location, and etc.!"
+        }]
+    
+    # Website link in a more compact container
+    st.markdown("""
+    <style>
+    .website-container {
+        background-color: #f0f8ff;
+        border-radius: 10px;
+        padding: 6px 10px;
+        border: 1px solid #b8daff;
+        margin: 6px 0;
+        text-align: center;
+    }
+    .website-message {
+        font-weight: 500;
+        color: #004085;
+        font-size: 0.9rem;
+        line-height: 1.2;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown(
+        '''
+        <div class="website-container">
+            <div class="website-message">
+                To apply, visit our Application Form at our website or click this link: 
+                <a href="https://state101-travel-website.vercel.app/services" target="_blank" style="color: #0066cc; text-decoration: none; font-weight: bold;">
+                    Application Form
+                </a>
+            </div>
+        </div>
+        ''', 
+        unsafe_allow_html=True
+    )
+    
     # Single Chat Assistant tab only
     st.header("Chat Assistant")
-    st.info("To apply, please visit our official website: [https://state101-travel-website.vercel.app/services](https://state101-travel-website.vercel.app/services)")
+
     chat_container = st.container()
     with chat_container:
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
+    
     st.markdown("<br>" * 2, unsafe_allow_html=True)
     user_prompt = st.chat_input("Ask about US and Canada visas...")
+    
     if user_prompt:
         st.session_state.messages.append({"role": "user", "content": user_prompt})
         bot_response = st.session_state.chatbot.generate(user_prompt)
@@ -1991,17 +2082,3 @@ these terms.
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
