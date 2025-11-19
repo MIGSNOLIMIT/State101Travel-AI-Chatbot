@@ -220,13 +220,13 @@ HARDCODED_RESPONSES = {
     
     # Appointment Booking
     "appointment": """📅 **To book an appointment**, complete our application form with:
-• Full Name
-• Email
-• Phone
-• Age
-• Address
-• Visa Type (Canadian/American)
-• Available Time
+\n\n• Full Name
+\n\n• Email
+\n\n• Phone
+\n\n• Age
+\n\n• Address
+\n\n• Visa Type (Canadian/American)
+\n\n• Available Time
 
 Your information is secure and will only be used for visa assessment.
 
@@ -240,15 +240,15 @@ Your information is secure and will only be used for visa assessment.
 \n\n✨ We recommend booking an appointment to ensure we can accommodate you promptly!""",
     
     "how can i book": """📅 **To book an appointment**, complete our application form with:
-• Full Name
-• Email
-• Phone
-• Age
-• Address
-• Visa Type (Canadian/American)
-• Available Time
+\n\n• Full Name
+\n\n• Email
+\n\n• Phone
+\n\n• Age
+\n\n• Address
+\n\n• Visa Type (Canadian/American)
+\n\n• Available Time
 
-Your information is secure and will only be used for visa assessment.
+\n\nYour information is secure and will only be used for visa assessment.
 
 \n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
 \n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
@@ -260,15 +260,15 @@ Your information is secure and will only be used for visa assessment.
 ✨ We recommend booking an appointment to ensure we can accommodate you promptly!""",
     
     "how can i book an appointment": """📅 **To book an appointment**, complete our application form with:
-• Full Name
-• Email
-• Phone
-• Age
-• Address
-• Visa Type (Canadian/American)
-• Available Time
+\n\n• Full Name
+\n\n• Email
+\n\n• Phone
+\n\n• Age
+\n\n• Address
+\n\n• Visa Type (Canadian/American)
+\n\n• Available Time
 
-Your information is secure and will only be used for visa assessment.
+\n\nYour information is secure and will only be used for visa assessment.
 
 \n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
 \n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
@@ -284,19 +284,18 @@ Your information is secure and will only be used for visa assessment.
     
     # Application Start
     "how can i start my application": """📝 **To get started**, complete our application form with:
-• Full Name
-• Email
-• Phone
-• Age
-• Address
-• Visa Type (Canadian/American)
-• Available Time
+\n\n• Full Name
+\n\n• Email
+\n\n• Phone
+\n\n• Age
+\n\n• Address
+\n\n• Visa Type (Canadian/American)
+\n\n• Available Time
 
-Your information is secure and will only be used for visa assessment.
+\n\nYour information is secure and will only be used for visa assessment.
 
 📍 **Our Location:**
 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-
 🗺️ **Google Maps:** https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
 
 🎥 **Location Guide Video:** https://vt.tiktok.com/ZSyuUpdN6/
@@ -311,15 +310,15 @@ state101ortigasbranch@gmail.com
 Monday to Saturday, 9AM-5PM""",
     
     "how can i apply": """📝 **To get started**, complete our application form with:
-• Full Name
-• Email
-• Phone
-• Age
-• Address
-• Visa Type (Canadian/American)
-• Available Time
+\n\n• Full Name
+\n\n• Email
+\n\n• Phone
+\n\n• Age
+\n\n• Address
+\n\n• Visa Type (Canadian/American)
+\n\n• Available Time
 
-Your information is secure and will only be used for visa assessment.
+\n\nYour information is secure and will only be used for visa assessment.
 
 📍 **Our Location:**
 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
@@ -415,124 +414,124 @@ We recommend an appointment before walking in. To schedule an appointment, pleas
     
     "how much": """💰 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     "price": """💰 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     "cost": """💰 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     # Payment Methods
     "payment methods": """💳 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     "what payment methods": """💳 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     # Installment Plans
     "installment plans": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     "do you offer installment": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     # Hidden Charges
     "hidden charges": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     "are there any hidden charges": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     # Free Consultation/Training
     "consultation free": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     "is the consultation really free": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     "are trainings free": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     "is there a fee for training": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 https://vt.tiktok.com/ZSyuUpdN6/
-📞 +63 905-804-4426 or +63 969-251-0672
-📧 state101ortigasbranch@gmail.com
-⏰ Mon-Sat 9AM-5PM""",
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
     
     # Submit Documents/Requirements
     "submit requirements": "📤 Submit your requirements through the Initial Assessment tab with your personal and contact details.",
@@ -579,26 +578,26 @@ We recommend verifying through these official channels.""",
     
     # Scammers
     "scammers": """⚠️ To ensure you're dealing with an official member of State101, please note our official details:
-• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
-• Business Hours: Open Mon-Sat 9AM-5PM
-• We are officially registered with the Municipality of Pasig.
+\n\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+\n\n• Business Hours: Open Mon-Sat 9AM-5PM
+\n\n• We are officially registered with the Municipality of Pasig.
 
 Please only use our official contacts and report any suspicious accounts to us.""",
     
     "encounter scammers": """⚠️ To ensure you're dealing with an official member of State101, please note our official details:
-• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
-• Business Hours: Open Mon-Sat 9AM-5PM
-• We are officially registered with the Municipality of Pasig.
+\n\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+\n\n• Business Hours: Open Mon-Sat 9AM-5PM
+\n\n• We are officially registered with the Municipality of Pasig.
 
 Please only use our official contacts and report any suspicious accounts to us.""",
     
     "what should i do if i encounter scammers": """⚠️ To ensure you're dealing with an official member of State101, please note our official details:
-• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
-• Business Hours: Open Mon-Sat 9AM-5PM
-• We are officially registered with the Municipality of Pasig.
+\n\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+\n\n• Business Hours: Open Mon-Sat 9AM-5PM
+\n\n• We are officially registered with the Municipality of Pasig.
 
 Please only use our official contacts and report any suspicious accounts to us.""",
     
@@ -2089,3 +2088,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
