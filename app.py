@@ -114,180 +114,562 @@ google map link: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8 ."
 
 # ========== HARDCODED RESPONSES ==========
 HARDCODED_RESPONSES = {
-    # Core information
-    "requirements": """🛂 **Visa Requirements**:
-- Valid passport (Photocopy)
-- 2x2 photo (white background)
-- Training Certificate (if available)
-- Diploma (Photocopy if available)
-- Updated Resume
-- Other supporting documents may be discussed during your assessment.""",
-    "appointment": "📅 We accept walk-in clients with or without an appointment, but we highly recommend booking an appointment first to ensure we can accommodate you promptly.",
-    "hours": "🕘 Open Monday to Saturday, 9:00 AM to 5:00 PM.",
-    "business hours": "🕘 We're open Monday to Saturday, 9:00 AM to 5:00 PM.",
-    "opportunities": "💼 B1 Visa includes a 6-month care-giving training program with our partner homecare facilities in the US.",
-    "located": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
-    "map": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
+    # Core Services
+    "services": "🛂 We provide full assistance with US and Canada Visa applications and processing.",
+    "what services do you offer": "🛂 We provide full assistance with US and Canada Visa applications and processing.",
+    
+    # Location & Contact
     "location": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
-    "website": "🌐 Official Website: https://state101-travel-website.vercel.app/\n\nFor appointments and quick assistance, you can also contact us:\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n🗺️ Map: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8",
-    "processing time": "⏳ Standard processing takes 2-4 weeks. Expedited services may be available.",
-    "complex": "🔍 For case-specific advice, please contact our specialists directly:\n📞 0961 084 2538\n📧 state101ortigasbranch@gmail.com",
-    "status": "🔄 For application status updates, please email us with your reference number or contact us at +63 905-804-4426 / +63 969-251-0672.",
-    "urgent": "⏰ For urgent concerns, call us at +63 905-804-4426 or +63 969-251-0672 during business hours.",
+    "located": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
+    "where is your office": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
+    "map": "📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n\n🗺️ Find us here: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n\n🎥 Location guide video: https://vt.tiktok.com/ZSyuUpdN6/",
     
-    # Pricing and payments
-    "how much": "💰 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "price": "💰 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "cost": "💰 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "fee": "💰 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "payment": "💳 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "payment options": "💳 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "pay": "💳 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-
+    # Hours
+    "hours": "🕘 Monday to Saturday, 9:00 AM to 5:00 PM",
+    "business hours": "🕘 Monday to Saturday, 9:00 AM to 5:00 PM",
+    "what are your office hours": "🕘 Monday to Saturday, 9:00 AM to 5:00 PM",
+    "office hours": "🕘 Monday to Saturday, 9:00 AM to 5:00 PM",
+    
+    # Contact
+    "contact": "You can contact us directly:\n📞 +63 905-804-4426 or +63 969-251-0672\n\n📧 state101ortigasbranch@gmail.com",
+    "how can i contact": " You can contact us directly:\n📞 +63 905-804-4426 or +63 969-251-0672\n\n📧 state101ortigasbranch@gmail.com",
+    "how can i contact your team": " You can contact us directly:\n📞 +63 905-804-4426 or +63 969-251-0672\n\n📧 state101ortigasbranch@gmail.com",
+    
     # Legitimacy
-    "legit": "✅ Yes, our company is 100% legitimate. We’re officially registered and have a permit to operate issued by the Municipality of Pasig.",
-    "is your company legit": "✅ Yes, our company is 100% legitimate. We’re officially registered and have a permit to operate issued by the Municipality of Pasig.",
-
-    # Services (updated to include Canada)
-    "services": "🛂 We provide full assistance with US and Canada visa applications and processing.",
-    "what services do you offer": "🛂 We provide full assistance with US and Canada visa applications and processing.",
-
-    # Other countries
-    "other countries": "🌍 We currently don’t offer visa assistance for other countries. Our services are focused on US and Canada visa processing.",
-    "do you also offer visas to other countries": "🌍 We currently don’t offer visa assistance for other countries. Our services are focused on US and Canada visa processing.",
-
-    # Program details and FAQs that redirect to briefing
-    "program details": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "details of your program": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "are trainings free": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "is orientation free": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "installment plans": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "hidden charges": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-    "consultation free": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.",
-
-    # Visa type offered (updated)
-    "visa type": "🛂 We offer Non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada.",
-    "what type of visa you offer": "🛂 We offer Non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada.",
-
-    # Qualifications & policies
-    "qualifications": "✅ Open to applicants with or without prior training or experience. Applicants must be willing to undergo training and develop the necessary skills for the program.",
-    "age limit": "👥 No age limit, provided the applicant is physically capable of performing the required tasks.",
-    "is there genders required": "⚧ Open to all genders.",
-    "gender": "⚧ Open to all genders.",
-    "does it accept graduates only": "🎓 Accepts both graduates and undergraduates.",
-    "graduates": "🎓 Accepts both graduates and undergraduates.",
-
-    # Additional FAQs from user list
-    "how can i contact your team": "📞 You can contact us directly: +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com",
-    "is there a guarantee of visa approval": "✅ We are here to guide you from start to finish and help increase your chances of visa approval for US non-immigrant visas and Canada's Express Entry and other pathways.",
-    "do you offer caregiver or work abroad programs": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office.\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n🎥 https://vt.tiktok.com/ZSyuUpdN6/\n📞 +63 905-804-4426 or +63 969-251-0672\n📧 state101ortigasbranch@gmail.com\n⏰ Mon-Sat 9AM-5PM",
-    "do you have student visa programs": "🛂 We offer Non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada.",
-    "how can i book an appointment": "📝 To get started, please complete our Application Form (Full Name, Email, Phone, Age, Address, Visa Type, Available Time). Your information is secure and used only for visa assessment.",
-    "how can i start my application": "📝 To get started, please complete our Application Form (Full Name, Email, Phone, Age, Address, Visa Type, Available Time). Your information is secure and used only for visa assessment.",
-    "what happens after i submit my documents": "📞 Expect a call within 24 hours as soon as we can handle your query.",
-    "can i apply even if im outside metro manila": "📍 Yes, we assist clients nationwide. Business hours: Mon-Sat 9AM-5PM.",
-    "can i walk in without an appointment": "✅ Yes, we accept walk-in clients with or without an appointment, but we highly suggest booking an appointment for faster service.",
-    "do you have available job offers abroad": "🛂 As of now we only offer non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada. For current details, please contact us directly at +63 905-804-4426 or +63 969-251-0672.",
-    "do you have a partner agency abroad": "🏢 No, we are an independent and private company located at our main office in Pasig City, accredited by the Municipality of Pasig.",
-    "are the job placements direct hire or through an agency": "🛂 As of now we only offer non-Immigrant Visa for the US and Express Entry and other immigration pathways for Canada. For current details, please contact us directly at +63 905-804-4426 or +63 969-251-0672.",
-    "can families or couples apply together": "👨‍👩‍👧 Yes. Please visit the Application Form to begin booking your appointment. For questions, contact us at +63 905-804-4426 or +63 969-251-0672.",
-    "is the orientation mandatory before applying": "🧭 Yes. We’ll orient you so you’re fully prepared and understand the process.",
-    "can i join the orientation online": "📝 All the details about our program will be discussed during the initial briefing and assessment at our office. We recommend booking an appointment via the Application Form.\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8\n🎥 https://vt.tiktok.com/ZSyuUpdN6/\n📞 +63 905-804-4426 or +63 969-251-0672.",
-    "what should i bring during the orientation day": "🧾 Bring the Initial Requirements. If you have questions, contact us for confirmation before your visit.",
-    "how can i reschedule my orientation": "📞 Please contact us directly at +63 905-804-4426 or +63 969-251-0672 to reschedule.",
-    "do you have orientations in other branches": "🏢 No, we are only located at our Pasig City office.",
-    "what documents are required to start processing": "🗂️ Provide the Initial Requirements. For a complete and personalized checklist, contact us.",
-    "how do i submit my requirements": "📤 Submit your requirements through the Initial Assessment tab with your personal and contact details.",
-    "how can i verify if my consultant is from state101 travel": "🔐 Please verify using our official details:\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672\n• Business Hours: Mon-Sat 9AM-5PM\n• We are officially registered with the Municipality of Pasig.",
-    "how can i make sure im dealing with an official staff member": "🔐 Please verify using our official details:\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672\n• Business Hours: Mon-Sat 9AM-5PM\n• We are officially registered with the Municipality of Pasig.",
-    "do you have social media": "🌐 Yes. You can find our social media links at the bottom of our website.",
-    "what should i do if i encounter scammers": "⚠️ Please use our official contacts and report suspicious accounts. Official details:\n• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City\n• Contact Numbers: +63 905-804-4426 or +63 969-251-0672\n• Business Hours: Mon-Sat 9AM-5PM\n• We are officially registered with the Municipality of Pasig.",
-    "do you assist with pre-departure orientation": "🧭 Yes, we orient you before departure to help ensure you are fully prepared for your journey.",
+    "legit": "✅ Yes, our company is 100% legitimate. We're officially registered and have a permit to operate issued by the Municipality of Pasig.",
+    "is your company legit": "✅ Yes, our company is 100% legitimate. We're officially registered and have a permit to operate issued by the Municipality of Pasig.",
+    "is state101 travel legitimate": "✅ Yes, our company is 100% legitimate. We're officially registered and have a permit to operate issued by the Municipality of Pasig.",
     
-    # Value proposition
-    "why choose": """🌟 Why choose State101 Travel?
-- Focused expertise: US and Canada visa assistance only, so guidance stays accurate and relevant.
-- Official and registered: Private company accredited by the Municipality of Pasig.
-- Clear, consistent info: Location, hours, and contacts are fixed and verified.
-- Friendly process: We recommend booking an appointment for a smooth visit.
+    # Visa Types
+    "visa type": "🛂 We offer Non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada.",
+    "what types of visas": "🛂 We offer Non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada.",
+    "what type of visa you offer": "🛂 We offer Non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada.",
+    "what types of visas do you process": "🛂 We offer Non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada.",
+    "do you have student visa": "🛂 We offer Non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada.",
+    
+    # Requirements
+    "requirements": """🛂 **Initial Requirements**:
+• Valid passport (Photocopy)
+• 2x2 photo (white background)
+• Training Certificate (if available)
+• Diploma (Photocopy if available)
+• Updated Resume
+• Other supporting documents may be discussed during your assessment.""",
+    "what are the requirements": """🛂 **Initial Requirements**:
+• Valid passport (Photocopy)
+• 2x2 photo (white background)
+• Training Certificate (if available)
+• Diploma (Photocopy if available)
+• Updated Resume
+• Other supporting documents may be discussed during your assessment.""",
+    "documents required": """🛂 **Initial Requirements**:
+• Valid passport (Photocopy)
+• 2x2 photo (white background)
+• Training Certificate (if available)
+• Diploma (Photocopy if available)
+• Updated Resume
+• Other supporting documents may be discussed during your assessment.""",
+    "what documents are required": """🛂 **Initial Requirements**:
+• Valid passport (Photocopy)
+• 2x2 photo (white background)
+• Training Certificate (if available)
+• Diploma (Photocopy if available)
+• Updated Resume
+• Other supporting documents may be discussed during your assessment.""",
+    
+    # Visa Approval Guarantee
+    "guarantee": "✅ Yes, we significantly increase your chances of visa approval. Whether you are applying for a US Non-Immigrant Visa or Express Entry to Canada, our expert team provides complete, end-to-end guidance—from your very first step until the final submission—to ensure your application is strong, accurate, and presented with confidence.",
+    "is there a guarantee": "✅ Yes, we significantly increase your chances of visa approval. Whether you are applying for a US Non-Immigrant Visa or Express Entry to Canada, our expert team provides complete, end-to-end guidance—from your very first step until the final submission—to ensure your application is strong, accurate, and presented with confidence.",
+    
+    # Programs
+    "caregiver program": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
 
-Contacts & Hours:
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
+    
+    "work abroad program": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
+    
+    # Qualifications
+    "qualifications": "✅ Open to applicants with or without prior training or experience. Applicants must be willing to undergo training and develop the necessary skills for the program.",
+    "what are the qualifications": "✅ Open to applicants with or without prior training or experience. Applicants must be willing to undergo training and develop the necessary skills for the program.",
+    
+    # Age
+    "age limit": "👥 No age limit, provided the applicant is physically capable of performing the required tasks.",
+    "age": "👥 No age limit, provided the applicant is physically capable of performing the required tasks.",
+    
+    # Gender
+    "gender": "⚧ Open to all genders.",
+    "is there genders required": "⚧ Open to all genders.",
+    "gender requirement": "⚧ Open to all genders.",
+    
+    # Graduates
+    "graduates": "🎓 Accepts both graduates and undergraduates.",
+    "does it accept graduates only": "🎓 Accepts both graduates and undergraduates.",
+    "do you accept undergraduates": "🎓 Accepts both graduates and undergraduates.",
+    
+    # Appointment Booking
+    "appointment": """📅 **To book an appointment**, complete our application form with:
+• Full Name
+• Email
+• Phone
+• Age
+• Address
+• Visa Type (Canadian/American)
+• Available Time
+
+Your information is secure and will only be used for visa assessment.
+
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM
+
+\n\n✨ We recommend booking an appointment to ensure we can accommodate you promptly!""",
+    
+    "how can i book": """📅 **To book an appointment**, complete our application form with:
+• Full Name
+• Email
+• Phone
+• Age
+• Address
+• Visa Type (Canadian/American)
+• Available Time
+
+Your information is secure and will only be used for visa assessment.
+
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM
+
+✨ We recommend booking an appointment to ensure we can accommodate you promptly!""",
+    
+    "how can i book an appointment": """📅 **To book an appointment**, complete our application form with:
+• Full Name
+• Email
+• Phone
+• Age
+• Address
+• Visa Type (Canadian/American)
+• Available Time
+
+Your information is secure and will only be used for visa assessment.
+
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM
+
+✨ We recommend booking an appointment to ensure we can accommodate you promptly!""",
+    
+    "walk in": "✅ Yes, we accept walk-in clients with or without an appointment, but we highly recommend booking an appointment to ensure we can accommodate you promptly.",
+    "can i walk in": "✅ Yes, we accept walk-in clients with or without an appointment, but we highly recommend booking an appointment to ensure we can accommodate you promptly.",
+    
+    # Application Start
+    "how can i start my application": """📝 **To get started**, complete our application form with:
+• Full Name
+• Email
+• Phone
+• Age
+• Address
+• Visa Type (Canadian/American)
+• Available Time
+
+Your information is secure and will only be used for visa assessment.
+
+📍 **Our Location:**
+2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+
+🗺️ **Google Maps:** https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+
+🎥 **Location Guide Video:** https://vt.tiktok.com/ZSyuUpdN6/
+
+📞 **Contact Us:**
++63 905-804-4426 or +63 969-251-0672
+
+📧 **Email:**
+state101ortigasbranch@gmail.com
+
+⏰ **Office Hours:**
+Monday to Saturday, 9AM-5PM""",
+    
+    "how can i apply": """📝 **To get started**, complete our application form with:
+• Full Name
+• Email
+• Phone
+• Age
+• Address
+• Visa Type (Canadian/American)
+• Available Time
+
+Your information is secure and will only be used for visa assessment.
+
+📍 **Our Location:**
+2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+
+🗺️ **Google Maps:** https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+
+🎥 **Location Guide Video:** https://vt.tiktok.com/ZSyuUpdN6/
+
+📞 **Contact Us:**
++63 905-804-4426 or +63 969-251-0672
+
+📧 **Email:**
+state101ortigasbranch@gmail.com
+
+⏰ **Office Hours:**
+Monday to Saturday, 9AM-5PM""",
+    
+    # After Submission
+    "what happens after": "📞 Expect a call within 24 hours as soon as we can handle your query.",
+    "what happens after i submit": "📞 Expect a call within 24 hours as soon as we can handle your query.",
+    
+    # Application Outside Metro Manila
+    "apply outside metro manila": "📍 Yes, we assist clients from all over the Philippines. Our business hours are Mon-Sat 9am to 5pm.",
+    "can i apply if im outside": "📍 Yes, we assist clients from all over the Philippines. Our business hours are Mon-Sat 9am to 5pm.",
+    "nationwide": "📍 Yes, we assist clients from all over the Philippines. Our business hours are Mon-Sat 9am to 5pm.",
+    
+    # Application Status
+    "application status": "📞 For the status of your application, feel free to contact us on our official numbers: +63 905-804-4426 or +63 969-251-0672.",
+    "how do i know the status": "📞 For the status of your application, feel free to contact us on our official numbers: +63 905-804-4426 or +63 969-251-0672.",
+    "status of my application": "📞 For the status of your application, feel free to contact us on our official numbers: +63 905-804-4426 or +63 969-251-0672.",
+    
+    # Job Offers & Placements
+    "job offers abroad": "🛂 As of now we only offer non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada. For detailed advice on the current visas we offer please contact us directly at +63 905-804-4426 or +63 969-251-0672.",
+    "available job offers": "🛂 As of now we only offer non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada. For detailed advice on the current visas we offer please contact us directly at +63 905-804-4426 or +63 969-251-0672.",
+    "job placements": "🛂 As of now we only offer non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada. For detailed advice on the current visas we offer please contact us directly at +63 905-804-4426 or +63 969-251-0672.",
+    
+    # Partner Agency
+    "partner agency": "🏢 No, we are an independent and private company located at our main office in Pasig City, accredited by the Municipality of Pasig.",
+    "do you have a partner agency": "🏢 No, we are an independent and private company located at our main office in Pasig City, accredited by the Municipality of Pasig.",
+    
+    # Families & Couples
+    "families or couples": "👨‍👩‍👧 Yes, families and couples can apply together. We highly suggest you visit the application form to begin booking your appointment with us. If you have further questions, feel free to contact us at +63 905-804-4426 or +63 969-251-0672.",
+    "can families apply": "👨‍👩‍👧 Yes, families and couples can apply together. We highly suggest you visit the application form to begin booking your appointment with us. If you have further questions, feel free to contact us at +63 905-804-4426 or +63 969-251-0672.",
+    
+    # Orientation
+    "orientation": "🧭 Yes, we are here to orient you with your needs to apply for a Visa to ensure you are fully prepared and understand the process.",
+    "is the orientation mandatory": "🧭 Yes, we are here to orient you with your needs to apply for a Visa to ensure you are fully prepared and understand the process.",
+    "orientation mandatory": "🧭 Yes, we are here to orient you with your needs to apply for a Visa to ensure you are fully prepared and understand the process.",
+    
+    "orientation online": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+We recommend an appointment before walking in. To schedule an appointment, please fill out our application form.
+
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
+    
+    "can i join the orientation online": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+We recommend an appointment before walking in. To schedule an appointment, please fill out our application form.
+
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
+    
+    # What to Bring
+    "what to bring": "🧾 Bring the Initial Requirements (Valid passport, 2x2 photo, Training Certificate if available, Diploma if available, Updated Resume). If you have further questions, feel free to contact us for confirmation before your visit.",
+    "what should i bring": "🧾 Bring the Initial Requirements (Valid passport, 2x2 photo, Training Certificate if available, Diploma if available, Updated Resume). If you have further questions, feel free to contact us for confirmation before your visit.",
+    
+    # Reschedule
+    "reschedule": "📞 You can contact us directly at +63 905-804-4426 or +63 969-251-0672 to reschedule your orientation.",
+    "how can i reschedule": "📞 You can contact us directly at +63 905-804-4426 or +63 969-251-0672 to reschedule your orientation.",
+    
+    # Other Branches
+    "other branches": "🏢 No, we are only located at our Pasig City office. Feel free to contact us for more information regarding the orientation.",
+    "do you have orientations in other branches": "🏢 No, we are only located at our Pasig City office. Feel free to contact us for more information regarding the orientation.",
+    
+    # Fees & Pricing
+    "processing fee": """💰 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+\n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+\n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+\n\n🎥 https://vt.tiktok.com/ZSyuUpdN6/
+\n\n📞 +63 905-804-4426 or +63 969-251-0672
+\n\n📧 state101ortigasbranch@gmail.com
+\n\n⏰ Mon-Sat 9AM-5PM""",
+    
+    "how much": """💰 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
 📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
-🗺️ Map: https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
-🎥 Location guide: https://vt.tiktok.com/ZSyuUpdN6/
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
 📞 +63 905-804-4426 or +63 969-251-0672
 📧 state101ortigasbranch@gmail.com
-⏰ Mon–Sat, 9:00 AM – 5:00 PM""",
+⏰ Mon-Sat 9AM-5PM""",
+    
+    "price": """💰 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    "cost": """💰 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    # Payment Methods
+    "payment methods": """💳 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    "what payment methods": """💳 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    # Installment Plans
+    "installment plans": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    "do you offer installment": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    # Hidden Charges
+    "hidden charges": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    "are there any hidden charges": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    # Free Consultation/Training
+    "consultation free": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    "is the consultation really free": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    "are trainings free": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    "is there a fee for training": """📝 All the details about our program will be discussed during the initial briefing and assessment at our office.
+
+📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
+🎥 https://vt.tiktok.com/ZSyuUpdN6/
+📞 +63 905-804-4426 or +63 969-251-0672
+📧 state101ortigasbranch@gmail.com
+⏰ Mon-Sat 9AM-5PM""",
+    
+    # Submit Documents/Requirements
+    "submit requirements": "📤 Submit your requirements through the Initial Assessment tab with your personal and contact details.",
+    "how do i submit": "📤 Submit your requirements through the Initial Assessment tab with your personal and contact details.",
+    "submit documents": "📤 Submit your requirements through the Initial Assessment tab with your personal and contact details.",
+    
+    # Verification & Safety
+    "verify consultant": """🔐 To ensure you're dealing with an official member of State101, please note our official details:
+• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+• Business Hours: Open Mon-Sat 9AM-5PM
+• We are officially registered with the Municipality of Pasig.
+
+We recommend verifying through these official channels.""",
+    
+    "how can i verify": """🔐 To ensure you're dealing with an official member of State101, please note our official details:
+• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+• Business Hours: Open Mon-Sat 9AM-5PM
+• We are officially registered with the Municipality of Pasig.
+
+We recommend verifying through these official channels.""",
+    
+    "official staff member": """🔐 To ensure you're dealing with an official member of State101, please note our official details:
+• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+• Business Hours: Open Mon-Sat 9AM-5PM
+• We are officially registered with the Municipality of Pasig.
+
+We recommend verifying through these official channels.""",
+    
+    "how can i make sure im dealing": """🔐 To ensure you're dealing with an official member of State101, please note our official details:
+• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+• Business Hours: Open Mon-Sat 9AM-5PM
+• We are officially registered with the Municipality of Pasig.
+
+We recommend verifying through these official channels.""",
+    
+    # Social Media
+    "social media": "🌐 Yes, you can find our social media links available at the bottom of our Website. Please feel free to check us out and follow us for updates and guides.",
+    "do you have facebook": "🌐 Yes, you can find our social media links available at the bottom of our Website. Please feel free to check us out and follow us for updates and guides.",
+    "do you have social media": "🌐 Yes, you can find our social media links available at the bottom of our Website. Please feel free to check us out and follow us for updates and guides.",
+    
+    # Scammers
+    "scammers": """⚠️ To ensure you're dealing with an official member of State101, please note our official details:
+• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+• Business Hours: Open Mon-Sat 9AM-5PM
+• We are officially registered with the Municipality of Pasig.
+
+Please only use our official contacts and report any suspicious accounts to us.""",
+    
+    "encounter scammers": """⚠️ To ensure you're dealing with an official member of State101, please note our official details:
+• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+• Business Hours: Open Mon-Sat 9AM-5PM
+• We are officially registered with the Municipality of Pasig.
+
+Please only use our official contacts and report any suspicious accounts to us.""",
+    
+    "what should i do if i encounter scammers": """⚠️ To ensure you're dealing with an official member of State101, please note our official details:
+• Location: 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
+• Contact Numbers: +63 905-804-4426 or +63 969-251-0672
+• Business Hours: Open Mon-Sat 9AM-5PM
+• We are officially registered with the Municipality of Pasig.
+
+Please only use our official contacts and report any suspicious accounts to us.""",
+    
+    # Other Countries
+    "other countries": "🌍 We currently don't offer visa assistance to other countries. We offer Non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada.",
+    "do you also offer visas to other countries": "🌍 We currently don't offer visa assistance to other countries. We offer Non-Immigrant Visa for US and Express Entry and other immigration pathways for Canada.",
+    
+    # Greetings
+    "hi": "Hi there! 👋 What can I help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "hello": "Hello! 👋 What can I help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "hey": "Hey! 👋 What can I help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "good morning": "Good morning! ☀️ How can I assist you today?",
+    "good afternoon": "Good afternoon! 🌤️ How can I assist you today?",
+    "good evening": "Good evening! 🌙 How can I assist you today?",
+    "greetings": "Hello! 👋 What can I help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "hola": "¡Hola! 👋 What can I help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "whats up": "Hey! 👋 What can I help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "what's up": "Hey! 👋 What can I help you with?\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "howdy": "Howdy! 👋 What can I help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "sup": "Hey! 👋 What can I help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    
+    # Goodbyes & Farewells
+    "bye": "Goodbye! 👋 Thank you for visiting State101 Travel. Feel free to come back anytime if you have more visa questions. We're here to help!",
+    "goodbye": "Goodbye! 👋 Thank you for visiting State101 Travel. Feel free to come back anytime if you have more visa questions. We're here to help!",
+    "see you": "See you later! 👋 Thanks for chatting with us. Don't hesitate to reach out if you need any visa assistance. We're here for you!",
+    "see you later": "See you later! 👋 Thanks for chatting with us. Don't hesitate to reach out if you need any visa assistance. We're here for you!",
+    "farewell": "Farewell! 👋 Thank you for visiting State101 Travel. We look forward to helping you with your visa application!",
+    "take care": "Take care! 👋 Thanks for visiting State101 Travel. Feel free to reach out anytime. We're here to help!",
+    "catch you": "Catch you later! 👋 Thanks for chatting with State101 Travel. Come back soon if you have more questions!",
+    "cya": "See ya! 👋 Thanks for visiting. Feel free to come back anytime with your visa questions!",
+    "adios": "¡Adiós! 👋 Thank you for visiting State101 Travel. Come back soon if you need help with your visa!",
+    "later": "Later! 👋 Thanks for chatting with us. Feel free to reach out anytime for visa assistance!",
+    
+    # Thanks & Appreciation
+    "thanks": "You're welcome! 😊 Is there anything else I can help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "thank you": "You're welcome! 😊 Is there anything else I can help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
+    "thx": "You're welcome! 😊 Is there anything else I can help you with?\n\nYou can ask about:\n\n• Visa types & requirements\n\n• Our location & hours\n\n• How to book an appointment\n\n• Qualifications & eligibility",
 }
 
-# ========== COLOR THEMES ==========
-COLOR_THEMES = {
-    "White": {
-        "primary": "#FFFFFF",
-        "secondary": "#F5F5F5",
-        "text": "#000000",
-        "text_secondary": "#444444",
-        "accent": "#DC143C",  # Crimson Red
-        "button": "#DC143C",
-        "icon": "🌙"  # Moon icon for light mode
-    },
-    "Black": {
-        "primary": "#121212",
-        "secondary": "#1E1E1E",
-        "text": "#FFFFFF",
-        "text_secondary": "#B0B0B0",
-        "accent": "#00BFFF",  # Electric Blue
-        "button": "#00BFFF",
-        "icon": "☀️"  # Sun icon for dark mode
-    }
-}
-
-# ========== LLM WRAPPER ==========
-# ========== LLM WRAPPER WITH RELEVANCE CHECK ==========
 class VisaAssistant:
     def __init__(self):
         self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         self.daily_count = 0
         self.last_call = 0
-        # Delay answers slightly to simulate careful reasoning and reduce rapid-fire responses
         self.thinking_delay = float(st.secrets.get("THINKING_DELAY_MS", 900)) / 1000.0
-        # Strict mode ensures canonical info comes only from hardcoded data
         self.strict_mode = bool(st.secrets.get("STRICT_MODE", True))
-        # Facts-backed fallback mode: when true, LLM receives canonical facts and must answer using them only
         self.smart_facts_mode = bool(st.secrets.get("SMART_FACTS_MODE", True))
-        # Semantic router settings (RapidFuzz string similarity)
         self.semantic_enabled = bool(st.secrets.get("SEMANTIC_ROUTER", True))
-        self.semantic_threshold = float(st.secrets.get("SEMANTIC_THRESHOLD", 86))  # 0-100 scale for rapidfuzz
-        self.semantic_entries: List[Tuple[str, str]] = []  # (intent, phrase)
+        self.semantic_threshold = float(st.secrets.get("SEMANTIC_THRESHOLD", 86))
+        self.semantic_entries: List[Tuple[str, str]] = []
 
-        # Embedding router settings (fastembed; optional)
         self.embedding_enabled = bool(st.secrets.get("EMBEDDING_ROUTER", True))
-        self.embedding_threshold = float(st.secrets.get("EMBEDDING_THRESHOLD", 0.58))  # cosine 0..1
+        self.embedding_threshold = float(st.secrets.get("EMBEDDING_THRESHOLD", 0.58))
         self._embedder = None
-        self.embedding_entries: List[Tuple[str, str]] = []  # (intent, phrase)
-        self.embedding_vectors: List[List[float]] = []  # normalized vectors
+        self.embedding_entries: List[Tuple[str, str]] = []
+        self.embedding_vectors: List[List[float]] = []
         
-        # --- RAG (Retrieval-Augmented Generation) ---
         self.rag_enabled = bool(st.secrets.get("RAG_ENABLED", False))
         self.rag_top_k = int(st.secrets.get("RAG_TOP_K", 4))
         self.rag_knowledge_dir = st.secrets.get("KNOWLEDGE_DIR", "knowledge")
-        self.rag_chunks: List[Tuple[str, str]] = []  # (source, chunk_text)
-        self.rag_vectors: List[List[float]] = []  # embeddings for chunks
+        self.rag_chunks: List[Tuple[str, str]] = []
+        self.rag_vectors: List[List[float]] = []
         
-        # --- Domain relevance gating (to avoid off-topic queries like "where to buy nuggets") ---
         self.domain_gating_enabled = bool(st.secrets.get("DOMAIN_GATING_ENABLED", True))
-        # If a prompt has no relevant keywords and token length >= this value, mark off-topic
         self.domain_min_len_for_offtopic = int(st.secrets.get("DOMAIN_MIN_LEN_FOR_OFFTOPIC", 6))
-        # Optional embedding-based relevance: if available, treat as in-domain when similarity >= threshold
-        self.domain_embed_threshold = float(st.secrets.get("DOMAIN_EMBED_THRESHOLD", 0.62))  # cosine 0..1
+        self.domain_embed_threshold = float(st.secrets.get("DOMAIN_EMBED_THRESHOLD", 0.62))
 
-        # --- LLM-based relevance gating (optional; uses classifier prompt with caching) ---
         self.llm_relevance_enabled = bool(st.secrets.get("LLM_RELEVANCE_ENABLED", True))
         self.llm_relevance_model = st.secrets.get("LLM_RELEVANCE_MODEL", "llama-3.3-70b-versatile")
-        # If classification fails (API error), allow query to proceed when True (fail-open)
         self.llm_relevance_fail_open = bool(st.secrets.get("LLM_RELEVANCE_FAIL_OPEN", True))
         self._relevance_cache = {}
-        # Optional strict guard for third‑party place queries (e.g., airport, malls)
         self.third_party_guard_enabled = bool(st.secrets.get("THIRD_PARTY_LOCATION_GUARD_ENABLED", True))
         self.third_party_place_terms = [
             "airport", "naia", "terminal", "runway", "jollibee", "mcdo", "mcdonald", "kfc",
@@ -300,7 +682,6 @@ class VisaAssistant:
             "where are you", "where is your office", "visit your office", "go to your office"
         ]
         
-        # Define topics that are considered relevant to State101 Travel
         self.relevant_keywords = [
             "visa", "travel", "passport", "appointment", "requirements", 
             "canada", "canadian", "america", "american", "us", "usa",
@@ -309,17 +690,15 @@ class VisaAssistant:
             "tourist", "business", "student", "work permit", "immigration",
             "fee", "cost", "price", "hours", "location", "contact", "website", "webpage",
             "eligibility", "qualification", "denial", "approval",
-            "urgent", "status", "track", "form", "apply", "b1", "choose", "benefits", "offerings", "table", "summary", "summarize"
+            "urgent", "status", "track", "form", "apply", "b1", "choose", "benefits", "offerings"
         ]
         
-        # Define off-topic keywords that should trigger immediate rejection
         self.offtopic_keywords = [
             "calculator", "code", "program", "recipe", "cook", "game",
             "movie", "song", "weather", "sports", "stock", "crypto",
             "math", "solve", "equation", "homework", "essay", "write a story"
         ]
 
-        # Intent synonyms mapped to canonical intents
         self.intent_synonyms = {
             "location": [
                 "where are you", "where are you located", "where is your office",
@@ -327,69 +706,38 @@ class VisaAssistant:
                 "find you", "tiktok", "tiktok location", "tiktok video", "google map"
             ],
             "hours": ["hours", "opening hours", "business hours", "schedule", "open time", "what time"],
-            "contact": ["contact", "phone", "phone number", "call you", "email", "email address", "how to contact you", "contact you", "reach you", "how can i contact you"],
+            "contact": ["contact", "phone", "phone number", "call you", "email", "email address"],
             "website": ["website", "web site", "web page", "webpage", "website page"],
-            "services": [
-                "services", "what services", "services do you offer",
-                "what services does state101 travel offer"
-            ],
+            "services": ["services", "what services", "services do you offer"],
             "legit": ["legit", "legitimacy", "is your company legit"],
-            "program details": [
-                "program details", "details of your program", "details of program",
-                "are trainings free", "is orientation free", "installment plans", "hidden charges",
-                "consultation free"
-            ],
-            "visa type": [
-                "visa type", "what type of visa", "what type of visa you offer",
-                "what types of visas do you process", "do you have student visa programs",
-                "o visa", "o-1 visa", "o1 visa", "o visa for us talent"
-            ],
+            "visa type": ["visa type", "what type of visa", "what types of visas"],
             "qualifications": ["qualifications", "qualification", "what are the qualifications"],
-            "age limit": ["age", "age limit", "age related"],
-            "gender": ["gender", "genders required"],
-            "graduates": ["graduates", "undergraduate", "does it accept graduates only"],
-            "requirements": ["requirements", "documents", "needed documents", "prepare", "preparation", "what should i prepare", "what to bring"],
-            "appointment": [
-                "appointment", "book", "schedule appointment", "how can i book an appointment",
-                "how can i start my application"
+            "requirements": ["requirements", "documents", "needed documents", "prepare"],
+            "appointment": ["appointment", "book", "schedule appointment"],
+            "greeting": [
+                "hi", "hello", "hey", "good morning", "good afternoon", "good evening",
+                "greetings", "hola", "what's up", "whats up", "howdy", "sup"
             ],
-            "status": ["status", "application status", "how do i know the status"],
-            "price": [
-                "price", "cost", "fee", "how much", "payment", "payment options", "pay",
-                "installment", "hidden charges", "consultation free", "processing fee",
-                "what payment methods do you accept"
-            ],
-            "program details": [
-                "program details", "details of your program", "details of program",
-                "fees related", "process related",
-                "visa application process", "application process", "process",
-                "how does visa application process work", "how does the process work",
-                "how does your process work", "steps", "procedure", "flow", "timeline", "how to apply"
-            ],
-            "why choose": [
-                "why choose", "why choose state101", "why should i choose you", "why pick you",
-                "what makes you different", "advantages", "benefits"
+            "goodbye": [
+                "bye", "goodbye", "see you", "farewell", "take care", "catch you",
+                "see you later", "later", "cya", "adios", "thanks", "thank you", "thx"
             ],
         }
-        # Build indexes
+        
         if self.semantic_enabled:
             self._build_semantic_index()
         if self.embedding_enabled:
             self._build_embedding_index()
-        # Build RAG index last so fastembed (if available) can be reused
         if self.rag_enabled:
             self._build_rag_index()
 
     def _build_semantic_index(self):
-        # Build a list of representative phrases for each intent.
         entries: List[Tuple[str, str]] = []
         for intent, syns in self.intent_synonyms.items():
             for s in syns:
                 entries.append((intent, s))
-        # Add the hardcoded keys as phrases as well
         for key in HARDCODED_RESPONSES.keys():
             entries.append((key, key))
-        # Deduplicate
         seen = set()
         deduped: List[Tuple[str, str]] = []
         for intent, text in entries:
@@ -400,13 +748,11 @@ class VisaAssistant:
         self.semantic_entries = deduped
 
     def _import_fastembed(self):
-        # Prefer the top-level import if available
         try:
             if _FASTEMBED_TEXTEMBEDDING is not None:
                 return _FASTEMBED_TEXTEMBEDDING
         except NameError:
             pass
-        # Fallback: lazy import via importlib
         try:
             mod = importlib.import_module("fastembed")
             TextEmbedding = getattr(mod, "TextEmbedding")
@@ -425,14 +771,12 @@ class VisaAssistant:
             return
         try:
             self._embedder = TextEmbedding()
-            # Build phrases similar to semantic index
             entries: List[Tuple[str, str]] = []
             for intent, syns in self.intent_synonyms.items():
                 for s in syns:
                     entries.append((intent, s))
             for key in HARDCODED_RESPONSES.keys():
                 entries.append((key, key))
-            # Dedup
             seen = set()
             deduped: List[Tuple[str, str]] = []
             for intent, text in entries:
@@ -445,15 +789,13 @@ class VisaAssistant:
             vectors = list(self._embedder.embed(texts))
             self.embedding_vectors = [self._l2_normalize(list(v)) for v in vectors]
         except Exception:
-            # Disable if anything fails
             self.embedding_enabled = False
 
-    # ---------- RAG SUPPORT ----------
     def _list_knowledge_files(self) -> List[Path]:
         base = Path(self.rag_knowledge_dir)
         if not base.exists() or not base.is_dir():
             return []
-        exts = {".md", ".txt"}  # keep it simple; PDFs can be added later
+        exts = {".md", ".txt"}
         files: List[Path] = []
         for p in base.rglob("*"):
             if p.is_file() and p.suffix.lower() in exts:
@@ -488,14 +830,12 @@ class VisaAssistant:
     def _build_rag_index(self):
         files = self._list_knowledge_files()
         if not files:
-            self.rag_enabled = False  # nothing to index; disable to save cycles
+            self.rag_enabled = False
             return
-        # Load and chunk
         chunks: List[Tuple[str, str]] = []
         for f in files:
             txt = self._read_text_file(f)
             chunks.extend(self._chunk_text(txt, source=str(f)))
-        # Dedup tiny/blank chunks
         cleaned: List[Tuple[str, str]] = []
         seen = set()
         for src, ch in chunks:
@@ -509,7 +849,6 @@ class VisaAssistant:
             cleaned.append((src, c))
         self.rag_chunks = cleaned
 
-        # Build embeddings if fastembed is available; else leave empty for fuzzy retrieval
         TextEmbedding = self._import_fastembed()
         if TextEmbedding is None:
             self.rag_vectors = []
@@ -525,79 +864,35 @@ class VisaAssistant:
     def _cosine_sim(self, a: List[float], b: List[float]) -> float:
         return sum(x*y for x, y in zip(a, b))
 
-    def rag_retrieve(self, prompt: str) -> List[Tuple[str, str]]:
-        """Return top-k (source, chunk) from knowledge base using embeddings when available,
-        otherwise fall back to RapidFuzz token_set_ratio ranking."""
-        if not self.rag_enabled or not self.rag_chunks:
-            return []
-        # Prefer embeddings
-        if self.rag_vectors:
-            TextEmbedding = self._import_fastembed()
-            if TextEmbedding is not None:
-                try:
-                    embedder = TextEmbedding()
-                    q = list(embedder.embed([prompt]))[0]
-                    q = self._l2_normalize(list(q))
-                    scored = []
-                    for i, v in enumerate(self.rag_vectors):
-                        scored.append((self._cosine_sim(q, v), i))
-                    scored.sort(reverse=True)
-                    top = [self.rag_chunks[i] for _, i in scored[: self.rag_top_k]]
-                    return top
-                except Exception:
-                    pass
-        # Fallback to token_set_ratio
-        try:
-            scored = []
-            norm = self._normalize(prompt)
-            for i, (_, ch) in enumerate(self.rag_chunks):
-                score = fuzz.token_set_ratio(norm, self._normalize(ch))
-                scored.append((score, i))
-            scored.sort(reverse=True)
-            top = [self.rag_chunks[i] for _, i in scored[: self.rag_top_k]]
-            return top
-        except Exception:
-            return []
-
     def _normalize(self, text: str) -> str:
         return re.sub(r'[^\w\s]', '', text.lower()).strip()
 
     def match_intent(self, prompt: str) -> str | None:
-        """Match intents using word-boundary regex to avoid substring mistakes
-        (e.g., 'age' matching inside 'page'). Supports multi-word synonyms.
-        """
         norm = self._normalize(prompt)
         for key, synonyms in self.intent_synonyms.items():
             for s in synonyms:
                 s_norm = self._normalize(s)
-                # Build a word-boundary pattern for the entire phrase
                 pattern = r"\b" + re.escape(s_norm) + r"\b"
                 if re.search(pattern, norm):
                     return key
         return None
 
     def get_canonical_response(self, intent: str) -> str | None:
-        # Direct retrieval if a matching key exists
         if intent in HARDCODED_RESPONSES:
             return HARDCODED_RESPONSES[intent]
-        # Map some intents to underlying keys
         mapping = {
             "location": "location",
             "hours": "hours",
-            "contact": "urgent",  # contains official phone numbers and email
-            "website": "website",  # dedicated website response
+            "contact": "contact",
+            "website": "website",
             "services": "services",
             "legit": "legit",
-            "program details": "program details",
             "visa type": "visa type",
             "qualifications": "qualifications",
-            "age limit": "age limit",
-            "gender": "gender",
-            "graduates": "graduates",
             "requirements": "requirements",
             "appointment": "appointment",
-            "status": "status",
-            "price": "price",
+            "greeting": "hello",
+            "goodbye": "goodbye",
         }
         key = mapping.get(intent)
         if key and key in HARDCODED_RESPONSES:
@@ -605,9 +900,6 @@ class VisaAssistant:
         return None
 
     def semantic_route(self, prompt: str) -> str | None:
-        """Route using RapidFuzz token_set_ratio across known phrases.
-        Returns canonical response if best score >= threshold.
-        """
         if not self.semantic_enabled:
             return None
         norm_prompt = self._normalize(prompt)
@@ -623,13 +915,11 @@ class VisaAssistant:
         return None
 
     def embed_route(self, prompt: str) -> str | None:
-        """Route using embeddings cosine similarity if enabled and available."""
         if not self.embedding_enabled or not self._embedder or not self.embedding_vectors:
             return None
         try:
             q_vec = list(self._embedder.embed([prompt]))[0]
             q_vec = self._l2_normalize(list(q_vec))
-            # cosine with normalized vectors equals dot product
             best_idx = -1
             best_score = -1.0
             for i, v in enumerate(self.embedding_vectors):
@@ -644,130 +934,15 @@ class VisaAssistant:
             return None
         return None
 
-    def pack_facts(self) -> dict:
-        """Build a compact facts dictionary from hardcoded responses.
-        These are the only allowed canonical values the LLM may use in fallback."""
-        def first_url(text: str) -> str | None:
-            m = re.search(r"https?://\S+", text or "")
-            return m.group(0) if m else None
-
-        # Address line (no links)
-        address_line = HARDCODED_RESPONSES.get("located") or ""
-        # Location block contains address + links
-        location_block = HARDCODED_RESPONSES.get("location") or address_line
-        map_url = first_url(HARDCODED_RESPONSES.get("map", "")) or first_url(location_block) or ""
-        # Extract TikTok link if present
-        tiktok_url = None
-        for url_match in re.findall(r"https?://\S+", location_block):
-            if "tiktok.com" in url_match:
-                tiktok_url = url_match
-                break
-
-        # Extract phones and email from 'urgent' block (contains official numbers and email)
-        urgent = HARDCODED_RESPONSES.get("urgent", "")
-        phones = re.findall(r"\+?\d[\d\s-]{7,}\d", urgent)
-        email_match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", urgent)
-        email_addr = email_match.group(0) if email_match else ""
-
-        facts = {
-            "address": address_line,
-            "location_block": location_block,
-            "map_url": map_url,
-            "tiktok_url": tiktok_url or "",
-            "website_url": HARDCODED_RESPONSES.get("website", ""),
-            "hours": HARDCODED_RESPONSES.get("hours", ""),
-            "phones": phones,
-            "email": email_addr,
-            "services": HARDCODED_RESPONSES.get("services", ""),
-            "legitimacy": HARDCODED_RESPONSES.get("legit", ""),
-            "program_details": HARDCODED_RESPONSES.get("program details", ""),
-            "qualifications": HARDCODED_RESPONSES.get("qualifications", ""),
-            "age_policy": HARDCODED_RESPONSES.get("age limit", ""),
-            "gender_policy": HARDCODED_RESPONSES.get("gender", ""),
-            "graduates_policy": HARDCODED_RESPONSES.get("graduates", ""),
-            "price_note": HARDCODED_RESPONSES.get("price", HARDCODED_RESPONSES.get("how much", "")),
-            "requirements": HARDCODED_RESPONSES.get("requirements", ""),
-            "contact_block": HARDCODED_RESPONSES.get("urgent", ""),
-            "form_hint": "📝 Please visit the 'Application Form' tab to begin your application.",
-        }
-        return facts
-
-    # ---- MULTI-INTENT FUSION HELPERS ----
-    def _regex_intent_hits(self, prompt: str) -> list[str]:
-        """Return all intents matched by word-boundary regex across synonyms.
-        Unlike match_intent (which returns the first), this returns a list for fusion.
-        """
-        norm = self._normalize(prompt)
-        hits: list[str] = []
-        for key, synonyms in self.intent_synonyms.items():
-            for s in synonyms:
-                s_norm = self._normalize(s)
-                pattern = r"\b" + re.escape(s_norm) + r"\b"
-                if re.search(pattern, norm):
-                    if key not in hits:
-                        hits.append(key)
-                        break  # don't add same intent multiple times
-        return hits
-
-    def _keyword_overlap_hits(self, prompt: str) -> list[str]:
-        """Heuristic: pick top overlapping keyword topics. Returns up to 3 distinct intents."""
-        tokens = set(self._normalize(prompt).split())
-        topic_keywords = {
-            # Avoid generic tokens like 'where' or 'find' to reduce false positives
-            "location": {"address", "map", "directions", "office", "tiktok", "location"},
-            "appointment": {"appointment", "book", "schedule", "set", "meeting", "reserve"},
-            "hours": {"hours", "open", "opening", "schedule", "time", "times"},
-            "contact": {"contact", "phone", "call", "email", "mail", "number"},
-            "requirements": {"requirements", "documents", "docs", "papers", "needed"},
-            "price": {"price", "cost", "fee", "payment", "pay", "rates", "rate", "how", "much"},
-            "status": {"status", "track", "tracking", "update", "reference"},
-            "visa type": {"type", "b1", "b2", "what", "visa", "kind"},
-        }
-        scored: list[tuple[str, int]] = []
-        for key, kws in topic_keywords.items():
-            score = len(tokens & kws)
-            if score > 0:
-                scored.append((key, score))
-        scored.sort(key=lambda x: x[1], reverse=True)
-        # keep those with score >= 2 strongly, else top 1 weak overlap
-        strong = [k for k, s in scored if s >= 2]
-        if strong:
-            return strong[:3]
-        return [k for k, _ in scored[:1]]
-
-    def _fuse_intents(self, intents: list[str]) -> str | None:
-        """Combine canonical answers for up to 3 intents in a user-friendly way."""
-        if not intents:
-            return None
-        merged: list[str] = []
-        for it in intents:
-            ans = self.get_canonical_response(it)
-            if ans and ans not in merged:
-                merged.append(ans)
-        if not merged:
-            return None
-        # Join with a visual spacer; keep emoji formatting from each block
-        return "\n\n".join(merged[:3])
-
     def fuzzy_fact_match(self, prompt: str) -> str | None:
-        """Lightweight keyword overlap to map unseen phrasing to an intent."""
         tokens = set(self._normalize(prompt).split())
         topic_keywords = {
-            # Avoid generic tokens like 'where' or 'find' to reduce false positives
             "location": {"address", "map", "directions", "office", "tiktok", "location"},
-            "hours": {"hours", "open", "opening", "schedule", "time", "times"},
-            "contact": {"contact", "phone", "call", "email", "mail", "number"},
-            "services": {"services", "offer", "provide", "service"},
-            "program details": {"process", "procedure", "steps", "flow", "timeline", "briefing", "assessment", "program", "details", "apply"},
-            "qualifications": {"qualifications", "qualification", "eligible", "eligibility", "experience", "training"},
-            "age limit": {"age", "years", "old", "limit"},
-            "gender": {"gender", "male", "female", "women", "men"},
-            "graduates": {"graduate", "undergraduate", "degree", "college"},
-            "price": {"price", "cost", "fee", "payment", "pay", "rates", "rate", "how", "much"},
-            "requirements": {"requirements", "documents", "docs", "papers", "needed", "prepare", "preparation", "bring"},
-            "appointment": {"appointment", "book", "schedule", "set", "meeting"},
-            "status": {"status", "track", "tracking", "update", "reference"},
-            "visa type": {"type", "b1", "b2", "what", "visa", "kind"},
+            "hours": {"hours", "open", "opening", "schedule", "time"},
+            "contact": {"contact", "phone", "call", "email", "mail"},
+            "services": {"services", "offer", "provide"},
+            "requirements": {"requirements", "documents", "needed", "prepare"},
+            "appointment": {"appointment", "book", "schedule"},
         }
         best_key = None
         best_score = 0
@@ -776,79 +951,42 @@ class VisaAssistant:
             if score > best_score:
                 best_score = score
                 best_key = key
-        # Require at least 2 keyword overlaps to avoid false positives
         if best_score >= 2:
             return best_key
         return None
 
     def is_relevant_query(self, prompt):
-        """Heuristic domain gate for State101 Travel. Conservative allow-list + optional embedding relevance."""
         if not self.domain_gating_enabled:
             return True
-
         normalized_prompt = prompt.lower()
-
-        # Immediate off-topic triggers
         for keyword in self.offtopic_keywords:
             if keyword in normalized_prompt:
                 return False
-
-        # Short greetings/questions: allow to keep UX smooth
         greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"]
         tokens = normalized_prompt.split()
         if any(g in normalized_prompt for g in greetings) and len(tokens) <= 3:
             return True
-
-        # Keyword-based relevance
         has_relevant_keyword = any(keyword in normalized_prompt for keyword in self.relevant_keywords)
-
-        # Optional embedding-based relevance using RAG or intent embeddings
-        try:
-            if not has_relevant_keyword and self._embedder and (self.rag_vectors or self.embedding_vectors):
-                # Build a reference pool: prefer RAG vectors; fallback to intent embedding vectors
-                ref_vectors = self.rag_vectors if self.rag_vectors else self.embedding_vectors
-                q_vec = list(self._embedder.embed([prompt]))[0]
-                q_vec = self._l2_normalize(list(q_vec))
-                best = -1.0
-                for v in ref_vectors:
-                    # cosine on normalized vectors
-                    score = sum(a*b for a, b in zip(q_vec, v))
-                    if score > best:
-                        best = score
-                if best >= self.domain_embed_threshold:
-                    has_relevant_keyword = True
-        except Exception:
-            pass
-
-        # If still no signal and the prompt is fairly long, consider it off-topic
         if not has_relevant_keyword and len(tokens) >= self.domain_min_len_for_offtopic:
             return False
-
         return True
 
     def check_query_relevance(self, prompt: str) -> bool:
-        """Use an LLM to decide if a query is relevant to State101 visa services.
-        Returns True when relevant, False when off-topic. Caches results per normalized prompt.
-        """
         try:
             cache_key = self._normalize(prompt)
             if cache_key in self._relevance_cache:
                 return self._relevance_cache[cache_key]
-
             relevance_system = (
                 "You are a strict query filter for State101 Travel (US/Canada visa assistance). "
                 "Output exactly one token: RELEVANT or OFFTOPIC."
             )
             content = (
                 "Decide if the following query is about State101 Travel or US/Canada visa assistance.\n"
-                "Consider the following rules:\n"
-                "- RELEVANT topics: visas (US/Canada tourist/business/student/work), requirements, documents, services, our location/address/map, our hours, our contact, appointments, pricing, eligibility, qualifications, greetings.\n"
-                "- OFFTOPIC topics: food/products (nuggets, chicken), entertainment, coding, math/homework, general knowledge, or any other businesses/places.\n"
-                "- IMPORTANT: Generic place/location queries that refer to third-party places (e.g., airports, malls, restaurants) are OFFTOPIC unless they explicitly reference our office (e.g., 'how do I get from NAIA to your office?').\n\n"
+                "- RELEVANT: visas, requirements, documents, services, location, hours, contact, appointments, pricing, qualifications.\n"
+                "- OFFTOPIC: food, entertainment, coding, math, general knowledge, other businesses.\n\n"
                 f"User query: \"{prompt}\"\n\n"
-                "Answer with exactly one word: RELEVANT or OFFTOPIC"
+                "Answer: RELEVANT or OFFTOPIC"
             )
-
             resp = self.client.chat.completions.create(
                 model=self.llm_relevance_model,
                 messages=[
@@ -860,20 +998,17 @@ class VisaAssistant:
             )
             label = (resp.choices[0].message.content or "").strip().upper()
             is_rel = label.startswith("RELEVANT") and "OFFTOPIC" not in label
-            # Small bounded cache (avoid unbounded growth)
             if len(self._relevance_cache) > 500:
                 self._relevance_cache.clear()
             self._relevance_cache[cache_key] = is_rel
             return is_rel
         except Exception:
-            # Fail-open (configurable)
             return True if self.llm_relevance_fail_open else False
 
     @sleep_and_retry
     @limits(calls=10, period=60)
     def generate(self, prompt):
         try:
-            # Detect and translate if not English
             if len(prompt.split()) > 2:
                 lang = detect(prompt)
                 if lang != "en":
@@ -881,204 +1016,80 @@ class VisaAssistant:
         except:
             pass
 
-        # small, consistent thinking delay to discourage rapid-fire outputs
         try:
             time.sleep(self.thinking_delay)
         except Exception:
             pass
 
-        # --- Early domain relevance gating ---
-        # 1) Optional strict guard for third‑party place queries not referring to us
+        # Relevance check
         if self.third_party_guard_enabled:
             text = prompt.lower()
             mentions_third_party = any(t in text for t in self.third_party_place_terms)
             refers_to_us = any(m in text for m in self._us_reference_markers)
             if mentions_third_party and not refers_to_us:
-                return (
-                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
-                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
-                )
+                return "😊 I specialize in State101 Travel's US and Canada visa services. Please ask about visa requirements, our process, appointments, or contact info."
 
-        # 2) Prefer LLM classifier when enabled; otherwise use heuristic gate
         if self.llm_relevance_enabled:
             if not self.check_query_relevance(prompt):
-                return (
-                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
-                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
-                )
+                return "😊 I specialize in State101 Travel's US and Canada visa services. How can I help you with your visa application?"
         else:
             if not self.is_relevant_query(prompt):
-                return (
-                    "😊 I can help with State101 Travel's US/Canada visa assistance only. "
-                    "Please ask about visa requirements, our process, appointments, pricing notes, contact info, or our location."
-                )
+                return "😊 I specialize in State101 Travel's US and Canada visa services. How can I help you with your visa application?"
 
-        # If the user explicitly asks for a composition (table/summary/why choose/etc.),
-        # go straight to the facts-backed LLM to synthesize the answer in the requested style.
-        def _is_composition_request(p: str) -> Tuple[bool, str | None]:
-            text = p.lower()
-            table_triggers = ["table", "structured table", "tabulate", "grid"]
-            summary_triggers = ["summarize", "summary", "overview"]
-            why_triggers = ["why choose", "benefits", "advantages", "why pick", "why should i choose"]
-            if any(t in text for t in table_triggers):
-                return True, "TABLE"
-            if any(t in text for t in summary_triggers):
-                return True, "SUMMARY"
-            if any(t in text for t in why_triggers):
-                return True, "WHY"
-            return False, None
-
-        comp, comp_mode = _is_composition_request(prompt)
-        if comp:
-            try:
-                enhanced_system_prompt = SYSTEM_PROMPT
-                facts = self.pack_facts() if self.smart_facts_mode else None
-                style_hint = ""
-                if comp_mode == "TABLE":
-                    style_hint = "Format your response as a clean Markdown table summarizing our services, contact information, hours, and location. Use only the FACTS."
-                elif comp_mode == "SUMMARY":
-                    style_hint = "Provide a concise bullet summary using only the FACTS. Include requirements and contact info."
-                elif comp_mode == "WHY":
-                    style_hint = "Explain briefly why to choose State101 using only the FACTS (legitimacy, focus on US/Canada, official contacts/location)."
-                messages = [{"role": "system", "content": enhanced_system_prompt}]
-                if facts:
-                    messages.append({"role": "system", "content": "Use only these FACTS:"})
-                    messages.append({"role": "system", "content": f"FACTS: {facts}"})
-                if style_hint:
-                    messages.append({"role": "system", "content": style_hint})
-                messages.append({"role": "user", "content": prompt})
-
-                response = self.client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=messages,
-                    temperature=0.2,
-                    max_tokens=800,
-                )
-                self.last_call = time.time()
-                self.daily_count += 1
-                return response.choices[0].message.content
-            except Exception:
-                # Fall back to deterministic blocks if LLM call fails
-                pass
-
-        # Multi-intent fusion: if the question clearly asks for 2+ items (e.g., address + appointment)
-        # combine both canonical answers deterministically before single-intent routing.
-        fusion_candidates = []
-        # regex hits (precise phrases)
-        fusion_candidates.extend(self._regex_intent_hits(prompt))
-        # keyword overlaps (broad hints)
-        for k in self._keyword_overlap_hits(prompt):
-            if k not in fusion_candidates:
-                fusion_candidates.append(k)
-        # keep only intents we safely fuse to avoid noise
-        fuse_whitelist = {
-            "location", "appointment", "hours", "contact", "requirements", "price", "status", "visa type"
-        }
-        fusion_list = [i for i in fusion_candidates if i in fuse_whitelist]
-        if len(fusion_list) >= 2:
-            fused = self._fuse_intents(fusion_list)
-            if fused:
-                return fused
-
-        # Intent-first, hardcoded responses
+        # Intent matching
         intent = self.match_intent(prompt)
         if intent:
             canonical = self.get_canonical_response(intent)
             if canonical:
                 return canonical
-            if self.strict_mode:
-                return "📘 I can share our official information only. Please ask about requirements, location, hours, services, or submit the application form."
 
-        # RapidFuzz router before embeddings to avoid over-eager semantic matches
+        # Semantic routing
         sem_answer = self.semantic_route(prompt)
         if sem_answer:
             return sem_answer
-        # Embedding router after string similarity; threshold kept conservative in secrets
+
+        # Embedding routing
         emb_answer = self.embed_route(prompt)
         if emb_answer:
             return emb_answer
+
+        # Fuzzy matching
         fuzzy_intent = self.fuzzy_fact_match(prompt)
         if fuzzy_intent:
             canonical = self.get_canonical_response(fuzzy_intent)
             if canonical:
                 return canonical
-            if self.strict_mode:
-                return "📘 I can share our official information only. Please ask about requirements, location, hours, services, or submit the application form."
 
-        # Check for form request
-        if "form" in prompt.lower() or "apply" in prompt.lower():
-            return "📝 Please visit the 'Application Form' tab to begin your application."
+        # Default response
+        return "😊 I specialize in State101 Travel's US and Canada visa services. How can I help you today?"
 
-        # Clean prompt and match hardcoded answers
-        normalized_prompt = re.sub(r'[^\w\s]', '', prompt).strip().lower()
-        for question, answer in HARDCODED_RESPONSES.items():
-            normalized_question = re.sub(r'[^\w\s]', '', question).strip().lower()
-            if normalized_question in normalized_prompt:
-                return answer
+# ========== COLOR THEMES ==========
+COLOR_THEMES = {
+    "White": {
+        "primary": "#FFFFFF",
+        "secondary": "#F5F5F5",
+        "text": "#000000",
+        "text_secondary": "#444444",
+        "accent": "#DC143C",  # Crimson Red
+        "button": "#DC143C",
+        "icon": "🌙"  # Moon icon for light mode
+    },
+    "Black": {
+        "primary": "#121212",
+        "secondary": "#1E1E1E",
+        "text": "#FFFFFF",
+        "text_secondary": "#B0B0B0",
+        "accent": "#00BFFF",  # Electric Blue
+        "button": "#00BFFF",
+        "icon": "☀️"  # Sun icon for dark mode
+    }
+}
 
-        # Rate limiting
-        now = time.time()
-        if now - self.last_call < 1.5:
-            time.sleep(1.5 - (now - self.last_call))
+# ========== LLM WRAPPER ==========
+# ========== LLM WRAPPER WITH RELEVANCE CHECK ==========
 
-        try:
-            # Enhanced system prompt with strict boundaries
-            enhanced_system_prompt = SYSTEM_PROMPT + """
 
-**CRITICAL RESTRICTION**: You MUST ONLY answer questions related to State101 Travel and visa services. If asked about anything unrelated (coding, recipes, general knowledge, etc.), respond with:
 
-"I apologize, but I can only assist with State101 Travel visa services. Please ask me about US/Canada visa requirements, applications, or our services."
-
-Never provide code, calculations, or information outside of visa/travel services."""
-
-            # Provide facts-backed instructions and RAG context when enabled
-            facts = self.pack_facts() if self.smart_facts_mode else None
-            rag_chunks = self.rag_retrieve(prompt)
-            facts_instructions = """
-You must answer ONLY using the FACTS provided below. If a requested detail isn't explicitly present, do your best to:
-1) Use the closest relevant item from FACTS (e.g., use program_details for process questions, price_note for fees, contact_block for contact info).
-2) If it still cannot be answered from FACTS, respond with the official contact_block and form_hint. Do NOT say "not available".
-Never invent, rename, or alter addresses, phone numbers, emails, hours, or services beyond what appears in FACTS.
-"""
-
-            messages = [
-                {"role": "system", "content": enhanced_system_prompt}
-            ]
-            if facts:
-                messages.append({"role": "system", "content": facts_instructions})
-                # Keep facts compact
-                messages.append({"role": "system", "content": f"FACTS: {facts}"})
-            # Add retrieved knowledge chunks as optional supporting context (non-canonical)
-            if rag_chunks:
-                joined = "\n\n".join([f"[{i+1}] ({src})\n{txt}" for i, (src, txt) in enumerate(rag_chunks)])
-                messages.append({"role": "system", "content": "Additional CONTEXT (use if relevant; do not override canonical FACTS for address/phones/hours):"})
-                messages.append({"role": "system", "content": joined})
-            messages.append({"role": "user", "content": prompt})
-
-            response = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=messages,
-                temperature=0.2,
-                max_tokens=800
-            )
-            self.last_call = time.time()
-            self.daily_count += 1
-            
-            # Double-check the response doesn't contain code or off-topic content
-            response_text = response.choices[0].message.content
-            if self.strict_mode:
-                # Only sanitize to location if the original prompt matched location intent
-                if self.match_intent(prompt) == "location":
-                    response_text = HARDCODED_RESPONSES.get("location", response_text)
-            if any(indicator in response_text.lower() for indicator in ["```", "def ", "function", "import ", "class "]):
-                return """😊 I'm sorry, but I can only assist with queries related to **State101 Travel** and our visa services.
-
-**How can I help you with your visa application today?**"""
-            
-            return response_text
-            
-        except Exception as e:
-            return "😊 I'm sorry, but I can only assist with queries related to **State101 Travel** and our visa services."
 # ========== GOOGLE SHEETS INTEGRATION ==========
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
 def save_to_sheet(data):
@@ -1881,10 +1892,6 @@ def main():
                 The chatbot is designed to provide a seamless experience with several key functions:
 
                 • **Conversational Assistant**: You can ask questions about Canadian and American visas, and your chat history is saved for you to review.
-                
-                • **Application Form**: A dedicated tab for submitting your personal and contact details for visa assistance.
-                
-                • **Visa Requirements**: Provides a clear checklist of necessary documents for Canadian and American visa applications.
                 
                 • **Language Support**: Can detect and translate non-English messages to improve communication accuracy.
                 
