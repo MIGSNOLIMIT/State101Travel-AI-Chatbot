@@ -83,10 +83,10 @@ SYSTEM_PROMPT = """You are the State101 Chatbot, the official AI assistant for S
 3. **Response Rules**:
    - For requirements/questions in HARDCODED_RESPONSES, use ONLY those exact answers
    - For complex queries (case-specific, application status, urgent matters):
-     "🔍 For detailed advice, please contact us directly:
-      📞 +63 905-804-4426 or +63 969-251-0672
-      📧 state101ortigasbranch@gmail.com
-      ⏰ Mon-Sat 9AM-5PM"
+     "\n\n🔍 For detailed advice, please contact us directly:
+      \n\n📞 +63 905-804-4426 or +63 969-251-0672
+      \n\n📧 state101ortigasbranch@gmail.com
+      \n\n⏰ Mon-Sat 9AM-5PM"
 
 4. **Key Talking Points**:
    - Always emphasize: "We recommend an appointment before walking in."
@@ -149,33 +149,33 @@ HARDCODED_RESPONSES = {
     
     # Requirements
     "requirements": """🛂 **Initial Requirements**:
-• Valid passport (Photocopy)
-• 2x2 photo (white background)
-• Training Certificate (if available)
-• Diploma (Photocopy if available)
-• Updated Resume
-• Other supporting documents may be discussed during your assessment.""",
+\n\n• Valid passport (Photocopy)
+\n\n• 2x2 photo (white background)
+\n\n• Training Certificate (if available)
+\n\n• Diploma (Photocopy if available)
+\n\n• Updated Resume
+\n\n• Other supporting documents may be discussed during your assessment.""",
     "what are the requirements": """🛂 **Initial Requirements**:
-• Valid passport (Photocopy)
-• 2x2 photo (white background)
-• Training Certificate (if available)
-• Diploma (Photocopy if available)
-• Updated Resume
-• Other supporting documents may be discussed during your assessment.""",
+\n\n• Valid passport (Photocopy)
+\n\n• 2x2 photo (white background)
+\n\n• Training Certificate (if available)
+\n\n• Diploma (Photocopy if available)
+\n\n• Updated Resume
+\n\n• Other supporting documents may be discussed during your assessment.""",
     "documents required": """🛂 **Initial Requirements**:
-• Valid passport (Photocopy)
-• 2x2 photo (white background)
-• Training Certificate (if available)
-• Diploma (Photocopy if available)
-• Updated Resume
-• Other supporting documents may be discussed during your assessment.""",
+\n\n• Valid passport (Photocopy)
+\n\n• 2x2 photo (white background)
+\n\n• Training Certificate (if available)
+\n\n• Diploma (Photocopy if available)
+\n\n• Updated Resume
+\n\n• Other supporting documents may be discussed during your assessment.""",
     "what documents are required": """🛂 **Initial Requirements**:
-• Valid passport (Photocopy)
-• 2x2 photo (white background)
-• Training Certificate (if available)
-• Diploma (Photocopy if available)
-• Updated Resume
-• Other supporting documents may be discussed during your assessment.""",
+\n\n• Valid passport (Photocopy)
+\n\n• 2x2 photo (white background)
+\n\n• Training Certificate (if available)
+\n\n• Diploma (Photocopy if available)
+\n\n• Updated Resume
+\n\n• Other supporting documents may be discussed during your assessment.""",
     
     # Visa Approval Guarantee
     "guarantee": "✅ Yes, we significantly increase your chances of visa approval. Whether you are applying for a US Non-Immigrant Visa or Express Entry to Canada, our expert team provides complete, end-to-end guidance—from your very first step until the final submission—to ensure your application is strong, accurate, and presented with confidence.",
@@ -228,7 +228,10 @@ HARDCODED_RESPONSES = {
 \n\n• Visa Type (Canadian/American)
 \n\n• Available Time
 
+\n\nVisit our [Application Form](https://state101-travel-website.vercel.app/services/) for an initial assessment.
+
 Your information is secure and will only be used for visa assessment.
+Your information is secure and will only be used for visa assessment."
 
 \n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
 \n\n🗺️ https://maps.app.goo.gl/o2rvHLBcUZhpDJfp8
@@ -248,6 +251,7 @@ Your information is secure and will only be used for visa assessment.
 \n\n• Visa Type (Canadian/American)
 \n\n• Available Time
 
+\n\nVisit our [Application Form](https://state101-travel-website.vercel.app/services/) for an initial assessment.
 \n\nYour information is secure and will only be used for visa assessment.
 
 \n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
@@ -267,7 +271,7 @@ Your information is secure and will only be used for visa assessment.
 \n\n• Address
 \n\n• Visa Type (Canadian/American)
 \n\n• Available Time
-
+\n\nVisit our [Application Form](https://state101-travel-website.vercel.app/services/) for an initial assessment.
 \n\nYour information is secure and will only be used for visa assessment.
 
 \n\n📍 2F Unit 223, One Oasis Hub B, Ortigas Ext, Pasig City
@@ -291,7 +295,7 @@ Your information is secure and will only be used for visa assessment.
 \n\n• Address
 \n\n• Visa Type (Canadian/American)
 \n\n• Available Time
-
+Visit our [Application Form](https://state101-travel-website.vercel.app/services/) for an initial assessment.
 \n\nYour information is secure and will only be used for visa assessment.
 
 📍 **Our Location:**
@@ -317,7 +321,7 @@ Monday to Saturday, 9AM-5PM""",
 \n\n• Address
 \n\n• Visa Type (Canadian/American)
 \n\n• Available Time
-
+Visit our [Application Form](https://state101-travel-website.vercel.app/services/) for an initial assessment.
 \n\nYour information is secure and will only be used for visa assessment.
 
 📍 **Our Location:**
@@ -2088,4 +2092,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
